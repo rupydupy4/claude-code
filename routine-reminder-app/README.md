@@ -5,6 +5,22 @@ reminders before it's due — e.g. **Workout at 10:30** notifies you at 10:00,
 10:10, 10:20 and 10:30. Both "how long before" and "how often" are adjustable
 per step, and you can pick which days each step repeats.
 
+**Pages**
+
+- **Today** — greeting, progress ring, an "Up next" card with a countdown, and a
+  timeline of today's steps you can tick off. Ticking a step off stops its
+  remaining reminders for the day.
+- **Routine** — all your steps grouped into morning / afternoon / evening, plus
+  quick-add sets (Morning kickstart, Gym day, Focus block, Wind down) timed
+  from your wake-up time.
+- **Progress** — current and best streak, weekly completion chart, and a
+  per-step 7-day history.
+- **Settings** — your name, default reminder timing, wake-up time, theme
+  (auto / light / dark), test notification, calendar export and reset.
+
+First launch shows a short welcome setup (name, wake-up time, starter sets,
+notification permission). Each step has its own icon, colour, duration and note.
+
 No server, no account: everything is stored on your phone.
 
 ## Getting it on your phone

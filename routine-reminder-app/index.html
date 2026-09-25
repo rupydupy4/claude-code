@@ -3,10 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Routine Reminders</title>
+  <title>Routine</title>
   <meta name="description" content="Build a daily routine and get nudged before each step.">
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="theme-color" content="#f5f5fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c0c12" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Routine">
   <link rel="manifest" href="manifest.webmanifest">
@@ -15,98 +17,318 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="top">
-    <div>
-      <h1>Routine</h1>
-      <p class="sub" id="today-label"></p>
-    </div>
-    <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙︎</button>
-  </header>
+  <div class="app">
+    <!-- TODAY -->
+    <section class="page" data-page="today">
+      <header class="page-head">
+        <p class="kicker" id="today-date"></p>
+        <h1 id="greeting">Good morning</h1>
+      </header>
 
-  <main>
-    <section id="perm-banner" class="banner" hidden>
-      <p>Turn on notifications so the app can remind you.</p>
-      <button class="primary" id="perm-btn">Enable notifications</button>
-    </section>
-
-    <section id="next-card" class="card next" hidden>
-      <p class="eyebrow">Up next</p>
-      <h2 id="next-name"></h2>
-      <p id="next-when"></p>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h3>Today's routine</h3>
-        <button class="primary small" id="add-btn">+ Add step</button>
+      <div class="banner" id="perm-banner" hidden>
+        <div class="banner-icon">🔔</div>
+        <div class="banner-text">
+          <strong>Turn on reminders</strong>
+          <span id="perm-text">So we can nudge you before each step.</span>
+        </div>
+        <button class="pill" id="perm-btn">Enable</button>
       </div>
-      <ul id="list" class="list"></ul>
-      <div id="empty" class="empty" hidden>
-        <p>No steps yet.</p>
-        <button class="ghost" id="example-btn">Start with an example routine</button>
+
+      <div class="hero" id="hero">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" r="52"/>
+            <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="ring-label"><strong id="ring-count">0/0</strong><span>done</span></div>
+        </div>
+        <div class="hero-next" id="hero-next">
+          <p class="eyebrow">Up next</p>
+          <h2 id="next-name">—</h2>
+          <p id="next-when" class="next-when"></p>
+          <button class="pill light" id="next-done" hidden>Mark done</button>
+        </div>
+      </div>
+
+      <div class="section-title"><h3>Schedule</h3><span id="today-summary"></span></div>
+      <ol class="timeline" id="timeline"></ol>
+      <div class="empty" id="today-empty" hidden>
+        <div class="empty-art">🌤️</div>
+        <h3 id="today-empty-title">Nothing planned today</h3>
+        <p id="today-empty-text">Add a few steps and we'll remind you before each one.</p>
+        <button class="btn primary" data-go="routine">Build your routine</button>
       </div>
     </section>
 
-    <p class="hint" id="bg-hint">
-      Reminders fire while this app is open or recently in the background.
-      For reminders when it's fully closed, use <strong>Settings → Add to phone calendar</strong>.
-    </p>
-  </main>
+    <!-- ROUTINE -->
+    <section class="page" data-page="routine" hidden>
+      <header class="page-head row-between">
+        <div>
+          <p class="kicker">Plan</p>
+          <h1>Routine</h1>
+        </div>
+        <button class="fab-small" id="add-btn" aria-label="Add step">＋</button>
+      </header>
 
-  <!-- Add / edit step -->
-  <dialog id="item-dialog">
+      <div class="section-title"><h3>Quick add</h3><span>Tap to add a set</span></div>
+      <div class="templates" id="templates"></div>
+
+      <div id="routine-groups"></div>
+      <div class="empty" id="routine-empty" hidden>
+        <div class="empty-art">🗓️</div>
+        <h3>No steps yet</h3>
+        <p>Pick a quick-add set above, or create your own step.</p>
+        <button class="btn primary" id="add-btn-2">Add a step</button>
+      </div>
+    </section>
+
+    <!-- PROGRESS -->
+    <section class="page" data-page="progress" hidden>
+      <header class="page-head">
+        <p class="kicker">Insights</p>
+        <h1>Progress</h1>
+      </header>
+
+      <div class="streak-card">
+        <div class="streak-flame">🔥</div>
+        <div>
+          <div class="streak-num"><span id="streak">0</span> day streak</div>
+          <p id="streak-text">Finish every step today to start a streak.</p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span class="stat-label">Best streak</span><strong id="stat-best">0</strong></div>
+        <div class="stat"><span class="stat-label">Done this week</span><strong id="stat-week">0</strong></div>
+        <div class="stat"><span class="stat-label">Completion</span><strong id="stat-rate">0%</strong></div>
+        <div class="stat"><span class="stat-label">All-time done</span><strong id="stat-total">0</strong></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title flush"><h3>Last 7 days</h3></div>
+        <div class="bars" id="bars"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title flush"><h3>By step</h3><span>last 7 days</span></div>
+        <ul class="habit-list" id="habit-list"></ul>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page" data-page="settings" hidden>
+      <header class="page-head">
+        <p class="kicker">Preferences</p>
+        <h1>Settings</h1>
+      </header>
+
+      <div class="profile">
+        <div class="avatar" id="avatar">🙂</div>
+        <div class="profile-text">
+          <label class="bare">Your name
+            <input id="set-name" maxlength="30" placeholder="Add your name" autocomplete="given-name">
+          </label>
+        </div>
+      </div>
+
+      <p class="group-label">Reminders</p>
+      <div class="group">
+        <label class="cell">
+          <span class="cell-icon" style="--c:#6366f1">⏱</span>
+          <span class="cell-text">Start reminding</span>
+          <select id="def-lead"></select>
+        </label>
+        <label class="cell">
+          <span class="cell-icon" style="--c:#8b5cf6">🔁</span>
+          <span class="cell-text">Then every</span>
+          <select id="def-interval"></select>
+        </label>
+        <label class="cell">
+          <span class="cell-icon" style="--c:#f59e0b">⏰</span>
+          <span class="cell-text">I usually wake up at</span>
+          <input type="time" id="set-wake">
+        </label>
+      </div>
+      <p class="group-foot">Defaults for new steps. Each step can override them.</p>
+
+      <p class="group-label">Notifications</p>
+      <div class="group">
+        <div class="cell">
+          <span class="cell-icon" style="--c:#ef4444">🔔</span>
+          <span class="cell-text">Status</span>
+          <span class="cell-value" id="notif-status"></span>
+        </div>
+        <button class="cell" id="test-btn">
+          <span class="cell-icon" style="--c:#10b981">✅</span>
+          <span class="cell-text">Send a test notification</span>
+          <span class="chev">›</span>
+        </button>
+        <button class="cell" id="ics-btn">
+          <span class="cell-icon" style="--c:#3b82f6">📅</span>
+          <span class="cell-text">Add routine to Calendar</span>
+          <span class="chev">›</span>
+        </button>
+      </div>
+      <p class="group-foot">Phones pause web apps in the background. Adding your routine to Calendar lets your phone remind you even when this app is closed.</p>
+
+      <p class="group-label">Appearance</p>
+      <div class="group">
+        <div class="cell">
+          <span class="cell-icon" style="--c:#0ea5e9">🌓</span>
+          <span class="cell-text">Theme</span>
+          <div class="segmented" id="theme-seg" role="radiogroup">
+            <button data-theme-opt="auto">Auto</button>
+            <button data-theme-opt="light">Light</button>
+            <button data-theme-opt="dark">Dark</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="group-label">Data</p>
+      <div class="group">
+        <button class="cell" id="replay-onboarding">
+          <span class="cell-icon" style="--c:#a855f7">✨</span>
+          <span class="cell-text">Show welcome again</span>
+          <span class="chev">›</span>
+        </button>
+        <button class="cell danger" id="reset-btn">
+          <span class="cell-icon" style="--c:#ef4444">🗑</span>
+          <span class="cell-text">Reset everything</span>
+          <span class="chev">›</span>
+        </button>
+      </div>
+
+      <p class="about">Routine · version 2.0<br>Your data stays on this device.</p>
+    </section>
+  </div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="today" aria-label="Today">
+      <svg viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></svg>
+      <span>Today</span>
+    </button>
+    <button data-tab="routine" aria-label="Routine">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      <span>Routine</span>
+    </button>
+    <button data-tab="progress" aria-label="Progress">
+      <svg viewBox="0 0 24 24"><path d="M5 20V12M12 20V5M19 20v-9"/></svg>
+      <span>Progress</span>
+    </button>
+    <button data-tab="settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- Step editor (bottom sheet) -->
+  <dialog class="sheet" id="item-sheet">
     <form method="dialog" id="item-form">
-      <h3 id="item-title">Add step</h3>
-      <label>What
-        <input name="name" required maxlength="60" placeholder="Workout">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <button type="button" class="link" id="cancel-btn">Cancel</button>
+        <h3 id="item-title">New step</h3>
+        <button type="submit" class="link strong">Save</button>
+      </div>
+
+      <div class="step-preview" id="step-preview">
+        <div class="bubble big" id="preview-bubble">🏋️</div>
+      </div>
+
+      <label class="field">Name
+        <input name="title" required maxlength="40" placeholder="e.g. Workout" autocomplete="off">
       </label>
-      <label>Time
-        <input name="time" type="time" required value="10:30">
-      </label>
-      <fieldset>
-        <legend>Days</legend>
+
+      <div class="field">Icon
+        <div class="emoji-grid" id="emoji-grid"></div>
+      </div>
+
+      <div class="field">Colour
+        <div class="color-row" id="color-row"></div>
+      </div>
+
+      <div class="field-row">
+        <label class="field">Time
+          <input name="time" type="time" required value="10:30">
+        </label>
+        <label class="field">Lasts
+          <select name="duration"></select>
+        </label>
+      </div>
+
+      <div class="field">Repeat
         <div class="days" id="days"></div>
-      </fieldset>
-      <div class="row">
-        <label>Remind from
+        <div class="day-presets">
+          <button type="button" data-preset="all">Every day</button>
+          <button type="button" data-preset="weekdays">Weekdays</button>
+          <button type="button" data-preset="weekends">Weekends</button>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <label class="field">Remind from
           <select name="lead"></select>
         </label>
-        <label>Then every
+        <label class="field">Then every
           <select name="interval"></select>
         </label>
       </div>
-      <p class="preview" id="preview"></p>
-      <div class="actions">
-        <button type="button" class="danger ghost" id="delete-btn" hidden>Delete</button>
-        <span class="spacer"></span>
-        <button type="button" class="ghost" id="cancel-btn">Cancel</button>
-        <button type="submit" class="primary">Save</button>
-      </div>
+      <div class="chips" id="preview-chips"></div>
+
+      <label class="field">Note <span class="opt">(optional)</span>
+        <input name="note" maxlength="80" placeholder="e.g. Leg day — bring water">
+      </label>
+
+      <button type="button" class="btn danger-soft block" id="delete-btn" hidden>Delete step</button>
     </form>
   </dialog>
 
-  <!-- Settings -->
-  <dialog id="settings-dialog">
-    <form method="dialog">
-      <h3>Settings</h3>
-      <div class="row">
-        <label>Default: remind from
-          <select id="def-lead"></select>
-        </label>
-        <label>Then every
-          <select id="def-interval"></select>
-        </label>
+  <!-- Onboarding -->
+  <div class="onboard" id="onboard" hidden>
+    <div class="ob-slide" data-step="0">
+      <div class="ob-art"><img src="icon.svg" alt="" width="96" height="96"></div>
+      <h1>Build a routine<br>that sticks</h1>
+      <p>Plan your day, get gentle nudges before every step, and watch your streak grow.</p>
+      <div class="ob-features">
+        <div><span>🔔</span>Reminders before each step</div>
+        <div><span>✅</span>Tick steps off as you go</div>
+        <div><span>🔥</span>Streaks and weekly progress</div>
       </div>
-      <button type="button" class="ghost block" id="test-btn">Send a test notification</button>
-      <button type="button" class="ghost block" id="ics-btn">Add to phone calendar (.ics)</button>
-      <p class="hint">The calendar file adds each step as a repeating event with the same reminders,
-        so your phone's calendar can alert you even when this app is closed.</p>
-      <div class="actions">
-        <span class="spacer"></span>
-        <button class="primary">Done</button>
-      </div>
-    </form>
-  </dialog>
+      <button class="btn primary block" data-ob-next>Get started</button>
+    </div>
+
+    <div class="ob-slide" data-step="1" hidden>
+      <div class="ob-art small">👋</div>
+      <h1>About you</h1>
+      <p>This helps us set sensible times for your routine.</p>
+      <label class="field">What should we call you?
+        <input id="ob-name" maxlength="30" placeholder="Your name (optional)" autocomplete="given-name">
+      </label>
+      <label class="field">When do you usually wake up?
+        <input id="ob-wake" type="time" value="10:00">
+      </label>
+      <button class="btn primary block" data-ob-next>Continue</button>
+    </div>
+
+    <div class="ob-slide" data-step="2" hidden>
+      <div class="ob-art small">🧩</div>
+      <h1>Pick a starting point</h1>
+      <p>Choose any sets to start with. You can edit everything later.</p>
+      <div class="ob-templates" id="ob-templates"></div>
+      <button class="btn primary block" data-ob-next>Continue</button>
+    </div>
+
+    <div class="ob-slide" data-step="3" hidden>
+      <div class="ob-art small">🔔</div>
+      <h1>Stay on track</h1>
+      <p id="ob-notif-text">Allow notifications so we can remind you before each step, e.g. 30, 20 and 10 minutes before a workout.</p>
+      <button class="btn primary block" id="ob-allow">Allow notifications</button>
+      <button class="btn ghost block" id="ob-finish">Maybe later</button>
+    </div>
+
+    <div class="ob-dots" id="ob-dots"><i></i><i></i><i></i><i></i></div>
+  </div>
 
   <div id="toast" class="toast" role="status" hidden></div>
 

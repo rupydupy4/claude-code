@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'routine-reminders-v1';
+const CACHE = 'routine-reminders-v2';
 const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (event) => {
