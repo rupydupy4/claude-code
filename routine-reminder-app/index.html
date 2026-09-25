@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Routine Reminders</title>
+  <meta name="description" content="Build a daily routine and get nudged before each step.">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Routine">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Routine</h1>
+      <p class="sub" id="today-label"></p>
+    </div>
+    <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙︎</button>
+  </header>
+
+  <main>
+    <section id="perm-banner" class="banner" hidden>
+      <p>Turn on notifications so the app can remind you.</p>
+      <button class="primary" id="perm-btn">Enable notifications</button>
+    </section>
+
+    <section id="next-card" class="card next" hidden>
+      <p class="eyebrow">Up next</p>
+      <h2 id="next-name"></h2>
+      <p id="next-when"></p>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h3>Today's routine</h3>
+        <button class="primary small" id="add-btn">+ Add step</button>
+      </div>
+      <ul id="list" class="list"></ul>
+      <div id="empty" class="empty" hidden>
+        <p>No steps yet.</p>
+        <button class="ghost" id="example-btn">Start with an example routine</button>
+      </div>
+    </section>
+
+    <p class="hint" id="bg-hint">
+      Reminders fire while this app is open or recently in the background.
+      For reminders when it's fully closed, use <strong>Settings → Add to phone calendar</strong>.
+    </p>
+  </main>
+
+  <!-- Add / edit step -->
+  <dialog id="item-dialog">
+    <form method="dialog" id="item-form">
+      <h3 id="item-title">Add step</h3>
+      <label>What
+        <input name="name" required maxlength="60" placeholder="Workout">
+      </label>
+      <label>Time
+        <input name="time" type="time" required value="10:30">
+      </label>
+      <fieldset>
+        <legend>Days</legend>
+        <div class="days" id="days"></div>
+      </fieldset>
+      <div class="row">
+        <label>Remind from
+          <select name="lead"></select>
+        </label>
+        <label>Then every
+          <select name="interval"></select>
+        </label>
+      </div>
+      <p class="preview" id="preview"></p>
+      <div class="actions">
+        <button type="button" class="danger ghost" id="delete-btn" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="ghost" id="cancel-btn">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="settings-dialog">
+    <form method="dialog">
+      <h3>Settings</h3>
+      <div class="row">
+        <label>Default: remind from
+          <select id="def-lead"></select>
+        </label>
+        <label>Then every
+          <select id="def-interval"></select>
+        </label>
+      </div>
+      <button type="button" class="ghost block" id="test-btn">Send a test notification</button>
+      <button type="button" class="ghost block" id="ics-btn">Add to phone calendar (.ics)</button>
+      <p class="hint">The calendar file adds each step as a repeating event with the same reminders,
+        so your phone's calendar can alert you even when this app is closed.</p>
+      <div class="actions">
+        <span class="spacer"></span>
+        <button class="primary">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
