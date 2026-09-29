@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#C0472B">
+<meta name="description" content="Turn any dish into an allergy-safe recipe with beginner-friendly steps.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Safe Plate">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Safe Plate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -352,7 +360,7 @@ const tintFor = name => { let x = 0; for (const c of (name||"")) x = (x * 31 + c
 
 /* ================= state ================= */
 const KEY = "safeplate:v3";
-let S = { name:"", allergies:[], custom:[], diets:[], recent:[], saved:[], shop:[] };
+let S = { name:"", allergies:[], custom:[], diets:[], recent:[], saved:[], shop:[], apiKey:"" };
 try {
   const old = JSON.parse(localStorage.getItem("safeplate:v2") || "null");
   if (old) { S.allergies = (old.selected||[]).filter(a => ALLERGENS.includes(a)); S.custom = old.custom || []; S.recent = old.recent || []; }
@@ -552,10 +560,20 @@ function showProfile(){
     h("section", {class:"card"}, h("h3", {}, "Allergies"), h("p", {class:"sub"}, "Every recipe is rewritten to avoid these completely."), aWrap, cWrap,
       h("div", {class:"addrow"}, addIn, h("button", {class:"btn", onclick:add}, "Add"))),
     h("section", {class:"card"}, h("h3", {}, "Also avoid"), h("p", {class:"sub"}, "Diet preferences recipes should follow."), dWrap),
+    (window.claude && claude.use) ? null : keyCard(),
     h("button", {class:"btn mustard wide", onclick:showSafetyCard}, "Show my allergy card"),
     h("p", {class:"hint", style:"text-align:center;margin-top:8px"}, "A big, clear card to show waiters or hosts."),
-    h("button", {class:"btn danger wide", style:"margin-top:26px", onclick:() => { if (confirm("Delete your profile, saved recipes and shopping list from this device?")) { try { localStorage.removeItem(KEY); } catch (e) {} S = {name:"", allergies:[], custom:[], diets:[], recent:[], saved:[], shop:[]}; go("home"); } }}, "Reset all app data")
+    h("button", {class:"btn danger wide", style:"margin-top:26px", onclick:() => { if (confirm("Delete your profile, saved recipes and shopping list from this device?")) { try { localStorage.removeItem(KEY); } catch (e) {} S = {name:"", allergies:[], custom:[], diets:[], recent:[], saved:[], shop:[], apiKey:""}; go("home"); } }}, "Reset all app data")
   ));
+}
+function keyCard(){
+  const keyIn = h("input", {type:"password", placeholder:"sk-ant-…", value:S.apiKey || "", autocomplete:"off", spellcheck:"false", "aria-label":"Claude API key"});
+  const status = h("p", {class:"hint", style:"margin:10px 0 0"}, S.apiKey ? "✓ Key saved on this device." : "No key saved yet.");
+  const saveKey = () => { S.apiKey = keyIn.value.trim(); save(); status.textContent = S.apiKey ? "✓ Key saved on this device." : "Key removed."; toast(S.apiKey ? "API key saved" : "API key removed"); };
+  keyIn.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveKey(); } });
+  return h("section", {class:"card"}, h("h3", {}, "Recipe writing"),
+    h("p", {class:"sub"}, "Safe Plate uses Claude to write recipes. Paste a Claude API key from platform.claude.com. It stays on this device, and recipe requests are billed to that key."),
+    h("div", {class:"addrow", style:"margin:0"}, keyIn, h("button", {class:"btn", onclick:saveKey}, "Save")), status);
 }
 function showSafetyCard(){
   setBar({title:"Allergy card", back:() => go("profile")});
@@ -576,20 +594,35 @@ const samplePromise = (window.claude && claude.use) ? claude.use("sample") : Pro
 async function askClaude(prompt, {signal, json} = {}){
   const sample = await samplePromise;
   if (sample) return json ? sample.json(prompt, {signal, modelTier:"default"}) : (await sample(prompt, {signal, modelTier:"quick"})).text;
+  // Outside the Claude app there's no built-in access, so use the API key saved in Me (stored on this device only).
+  if (!S.apiKey) throw {code:"no_key"};
   let res;
   try {
-    res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST", signal, headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, messages:[{role:"user", content:prompt}]})});
+    res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST", signal, headers:{
+        "Content-Type":"application/json",
+        "x-api-key":S.apiKey,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true",
+        "anthropic-beta":"server-side-fallback-2026-07-01"
+      },
+      body: JSON.stringify({model:"claude-opus-5-5", max_tokens: json ? 16000 : 1024,
+        output_config:{effort: json ? "medium" : "low"}, fallbacks:"default",
+        messages:[{role:"user", content:prompt}]})});
   } catch (e) { if (e && e.name === "AbortError") throw {code:"cancelled"}; throw {code:"no_connection"}; }
-  if (!res.ok) throw {code: res.status === 429 ? "rate_limited" : "no_connection"};
+  if (!res.ok) throw {code: res.status === 401 || res.status === 403 ? "bad_key" : res.status === 429 ? "rate_limited" : res.status === 400 ? "bad_request" : "no_connection"};
   const data = await res.json();
+  if (data.stop_reason === "refusal") throw {code:"refused"};
   const text = (data.content || []).map(b => b.type === "text" ? b.text : "").join("");
   if (!json) return text;
   const c = text.replace(/```json|```/g, "").trim();
   try { return JSON.parse(c.slice(c.indexOf("{"), c.lastIndexOf("}") + 1)); } catch (e) { throw {code:"bad_output"}; }
 }
 const ERR = {
-  no_connection:["Can't reach Claude from here","Open Safe Plate from its link in the Claude app or on claude.ai while signed in. It can't write recipes in a regular browser tab or from a downloaded copy."],
+  no_connection:["Can't reach Claude","Check your internet connection and try again."],
+  no_key:["Add your Claude API key","To write recipes outside the Claude app, Safe Plate needs your own Claude API key. Add it on the Me tab."],
+  bad_key:["That API key didn't work","Check the Claude API key on the Me tab — it may be mistyped, revoked, or out of credit."],
+  bad_request:["Claude couldn't take that request","Check that your API account has credit, then try again."],
+  refused:["Claude couldn't write that one","Try a different dish or wording."],
   not_granted:["Permission needed","Safe Plate uses your Claude account to write recipes. Reload the app and tap Allow when asked."],
   rate_limited:["Too many requests","Wait a minute, then try again."]
 };
@@ -667,7 +700,9 @@ Respond with ONLY a JSON object, no markdown:
     const [tt, bb] = ERR[e && e.code] || ["Couldn't make that recipe","Check the dish name and try again."];
     setBar({title:"", back});
     mount(h("div", {class:"empty", style:"padding-top:60px"}, h("div", {class:"big"}, "😕"), h("h2", {}, tt), h("p", {}, bb),
-      h("button", {class:"btn mustard", onclick:() => generate(dish)}, "Try again")));
+      (e && (e.code === "no_key" || e.code === "bad_key"))
+        ? h("button", {class:"btn mustard", onclick:() => go("profile")}, "Go to Me")
+        : h("button", {class:"btn mustard", onclick:() => generate(dish)}, "Try again")));
   }).finally(() => { if (my === ctl) ctl = null; });
 }
 
@@ -908,6 +943,7 @@ function showComponent(r, list, idx, keepScroll){
 /* ================= start ================= */
 renderTabbar();
 go("home");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
 </html>
