@@ -1,9 +1,9 @@
-name: Deploy Routine Reminders app
+name: Deploy apps to GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths: ['routine-reminder-app/**', '.github/workflows/deploy-routine-app.yml']
+    paths: ['routine-reminder-app/**', 'safe-plate/**', '.github/workflows/deploy-routine-app.yml']
   workflow_dispatch:
 
 permissions:
@@ -24,8 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Routine stays at the site root; Safe Plate lives at /safe-plate/.
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r routine-reminder-app/. _site/
+          mkdir -p _site/safe-plate
+          cp -r safe-plate/. _site/safe-plate/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: routine-reminder-app
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
