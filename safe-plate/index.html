@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C0472B">
+<title>Safe Plate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF5EC; --surface:#FFFFFF; --surface-2:#FFF9F4; --ink:#2E1B14; --muted:#7D5F52;
+  --deep:#C0472B; --on-deep:#FFFFFF; --mustard:#F4B63F; --on-mustard:#3A2300;
+  --line:#F2DCCB; --swap:#FDE7D8; --warn-bg:#FFF1CF; --warn-ink:#6B4A06; --danger:#B3261E;
+  --t1:#FFDDC1; --t2:#FFE9B8; --t3:#FFD3CC; --t4:#F9E0D0; --t5:#FBE2E7; --t6:#EDE6C4;
+  --shadow:0 1px 2px rgba(120,60,30,.06),0 8px 24px rgba(160,80,40,.10);
+  --font-ui:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1C1411; --surface:#271B16; --surface-2:#2E211B; --ink:#F7E9E0; --muted:#C2A493;
+    --deep:#F08A62; --on-deep:#2A120A; --mustard:#F6C35A; --on-mustard:#2E1C00;
+    --line:#3E2C24; --swap:#3A2419; --warn-bg:#3A2C12; --warn-ink:#F7DD9A; --danger:#FF8A80;
+    --t1:#43291C; --t2:#433519; --t3:#452521; --t4:#3D2A20; --t5:#432A30; --t6:#38331C;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1411; --surface:#271B16; --surface-2:#2E211B; --ink:#F7E9E0; --muted:#C2A493;
+    --deep:#F08A62; --on-deep:#2A120A; --mustard:#F6C35A; --on-mustard:#2E1C00;
+    --line:#3E2C24; --swap:#3A2419; --warn-bg:#3A2C12; --warn-ink:#F7DD9A; --danger:#FF8A80;
+    --t1:#43291C; --t2:#433519; --t3:#452521; --t4:#3D2A20; --t5:#432A30; --t6:#38331C;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.3);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:radial-gradient(120% 60% at 50% -10%,color-mix(in srgb,var(--mustard) 18%,transparent),transparent 70%) no-repeat,var(--bg);color:var(--ink);font-family:"Literata",Georgia,serif;font-size:16px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+.hidden{display:none!important}
+h1,h2,h3,.ui{font-family:var(--font-ui)}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid transparent}
+.bar.scrolled{border-bottom-color:var(--line)}
+.bar-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:10px 14px;min-height:58px}
+.logo{display:flex;align-items:center;gap:10px;font:800 1.25rem var(--font-ui);letter-spacing:-.02em;color:var(--deep);padding-left:4px}
+.mark{width:32px;height:32px;border-radius:10px;background:#C0472B;display:grid;place-items:center}
+.iconbtn{width:42px;height:42px;border-radius:12px;border:0;background:transparent;display:grid;place-items:center;color:var(--deep);flex:none}
+.iconbtn:hover{background:var(--surface-2)}
+.iconbtn.on{color:#E0455F}
+.bar-title{font:700 1.05rem var(--font-ui);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{flex:1}
+
+main{max-width:640px;margin:0 auto;padding:4px 18px calc(110px + env(safe-area-inset-bottom,0px))}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar-in{max-width:640px;margin:0 auto;display:flex}
+.tb{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 8px;font:600 .72rem var(--font-ui);color:var(--muted);position:relative}
+.tb svg{width:24px;height:24px}
+.tb[aria-current="page"]{color:var(--deep)}
+.tb .cnt{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--mustard);color:var(--on-mustard);font:800 .68rem var(--font-ui);display:grid;place-items:center;padding:0 5px}
+
+/* generic */
+.hello{padding:14px 0 4px}
+.hello small{font:600 .9rem var(--font-ui);color:var(--muted)}
+.hello h1{font-size:clamp(1.9rem,7.5vw,2.5rem);line-height:1.02;letter-spacing:-.035em;margin:4px 0 0}
+.search{display:flex;gap:8px;margin-top:18px}
+.search .field{position:relative;flex:1}
+.search svg.s{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search input{width:100%;font:500 1.02rem var(--font-ui);padding:15px 14px 15px 46px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.go{border:0;border-radius:16px;padding:0 18px;background:var(--mustard);color:var(--on-mustard);font:800 1rem var(--font-ui);box-shadow:0 6px 18px rgba(244,182,63,.35)}
+.formmsg{font:500 .9rem var(--font-ui);color:var(--danger);margin:8px 2px 0}
+
+.section{margin-top:26px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.sec-h h2{font-size:1.2rem;margin:0;letter-spacing:-.01em}
+.link{border:0;background:none;color:var(--deep);font:700 .9rem var(--font-ui);padding:4px}
+
+.card{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:16px}
+.forcard{display:flex;align-items:center;gap:14px;border:0;width:100%;text-align:left;margin-top:16px}
+.forcard .ic{width:44px;height:44px;border-radius:14px;background:var(--swap);display:grid;place-items:center;flex:none;font-size:1.4rem}
+.forcard .txt{flex:1;min-width:0}
+.forcard b{display:block;font:700 1rem var(--font-ui)}
+.forcard span{display:block;font-size:.88rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.forcard.setup{background:var(--mustard);color:var(--on-mustard)}
+.forcard.setup span{color:inherit;opacity:.8}
+.forcard.setup .ic{background:rgba(255,255,255,.45)}
+
+.rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -18px;padding:2px 18px 10px;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.tile{flex:none;width:140px;scroll-snap-align:start;border:0;padding:0;background:none;text-align:left}
+.tile .art{height:120px;border-radius:20px;display:grid;place-items:center;font-size:3.2rem;box-shadow:var(--shadow);margin-bottom:8px;transition:transform .15s}
+.tile:active .art{transform:scale(.97)}
+.tile b{display:block;font:700 .95rem/1.2 var(--font-ui)}
+.tile span{font-size:.8rem;color:var(--muted)}
+
+.cats{display:flex;gap:8px;overflow-x:auto;margin:0 -18px 14px;padding:0 18px 2px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font:600 .9rem var(--font-ui)}
+.cat[aria-pressed="true"]{background:var(--deep);border-color:var(--deep);color:var(--on-deep)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gi{border:0;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:12px;display:flex;align-items:center;gap:10px;text-align:left;min-height:64px}
+.gi .em{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:1.4rem;flex:none}
+.gi b{font:600 .92rem/1.2 var(--font-ui)}
+
+.tip{display:flex;gap:14px;background:var(--warn-bg);color:var(--warn-ink);border-radius:20px;padding:16px}
+.tip .ic{font-size:1.6rem;line-height:1}
+.tip b{display:block;font:700 1rem var(--font-ui);margin-bottom:2px}
+.tip p{margin:0;font-size:.94rem}
+
+.rows{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.rows li+li{border-top:1px solid var(--line)}
+.row{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;padding:12px 14px;text-align:left}
+.row .em{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none;font-size:1.3rem}
+.row .txt{flex:1;min-width:0}
+.row .t{font:600 1rem var(--font-ui);display:block}
+.row .s{font-size:.84rem;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{color:var(--muted);flex:none}
+.empty{text-align:center;padding:38px 16px}
+.empty .big{font-size:3rem}
+.empty h2{margin:8px 0 4px;font-size:1.25rem}
+.empty p{color:var(--muted);margin:0 auto 16px;max-width:24em}
+
+.pagehead{padding:14px 0 6px}
+.pagehead h1{font-size:clamp(1.8rem,7vw,2.3rem);letter-spacing:-.03em;margin:0;line-height:1.05}
+.pagehead p{margin:6px 0 0;color:var(--muted)}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--surface-2);border-radius:999px;padding:8px 13px;font:500 .92rem var(--font-ui)}
+.chip[aria-pressed="true"]{background:var(--deep);border-color:var(--deep);color:var(--on-deep)}
+.chip .tick{width:14px;height:14px;display:none}
+.chip[aria-pressed="true"] .tick{display:block}
+.addrow{display:flex;gap:8px;margin-top:12px}
+.addrow input{flex:1;min-width:0;font:500 .95rem var(--font-ui);padding:11px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink)}
+.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--deep);color:var(--on-deep);font:700 .95rem var(--font-ui)}
+.btn.soft{background:var(--swap);color:var(--deep)}
+.btn.mustard{background:var(--mustard);color:var(--on-mustard)}
+.btn.wide{width:100%;padding:15px;font-size:1.02rem;border-radius:16px}
+.btn.danger{background:transparent;color:var(--danger);border:1.5px solid var(--line)}
+.card h3{margin:0 0 4px;font-size:1.08rem}
+.card .sub{margin:0 0 12px;font-size:.9rem;color:var(--muted)}
+.stack>*+*{margin-top:14px}
+
+/* safety card */
+.scard{background:linear-gradient(145deg,#C0472B,#D9653A);color:#fff;border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+.scard .k{font:600 .9rem var(--font-ui);opacity:.8}
+.scard h2{font-size:1.9rem;line-height:1.05;margin:6px 0 16px;letter-spacing:-.02em}
+.scard ul{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-wrap:wrap;gap:8px}
+.scard li{background:#FFF1CF;color:#3A2300;font:800 1.05rem var(--font-ui);padding:8px 14px;border-radius:12px}
+.scard p{margin:0;font-size:1rem;line-height:1.5}
+.scard .also{margin-top:12px;opacity:.85;font-size:.92rem}
+
+/* loading */
+.loading{padding-top:22px}
+.loading h2{font-size:1.5rem;margin:0 0 6px;letter-spacing:-.02em}
+.loading p{color:var(--muted);margin:0 0 20px}
+.progress{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-bottom:24px}
+.progress i{display:block;height:100%;width:0;background:var(--deep);border-radius:inherit;transition:width .6s ease}
+.sk{background:var(--surface);border-radius:20px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.skl{height:14px;border-radius:8px;background:linear-gradient(90deg,var(--surface-2) 0%,var(--line) 50%,var(--surface-2) 100%);background-size:200% 100%;margin:10px 0}
+@media (prefers-reduced-motion: no-preference){.skl{animation:shimmer 1.4s linear infinite}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* recipe */
+.r-hero{height:150px;border-radius:24px;display:grid;place-items:center;font-size:4.5rem;margin-top:8px;box-shadow:var(--shadow)}
+.r-head{padding:16px 0 4px}
+.r-head h1{font-size:clamp(1.8rem,7vw,2.4rem);line-height:1.02;letter-spacing:-.03em;margin:0 0 8px}
+.r-head p{margin:0;color:var(--muted)}
+.stats{display:flex;gap:10px;margin-top:16px}
+.stat{flex:1;background:var(--surface);border-radius:16px;padding:11px 12px;box-shadow:var(--shadow)}
+.stat b{display:block;font:700 1rem var(--font-ui)}
+.stat small{font:500 .78rem var(--font-ui);color:var(--muted)}
+.freeof{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{font:600 .8rem var(--font-ui);padding:5px 10px;border-radius:999px;background:var(--swap);color:var(--deep)}
+.actions{display:flex;gap:10px;margin-top:16px}
+.actions .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
+.tabs{position:sticky;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:5;display:flex;gap:4px;background:var(--surface-2);border-radius:14px;padding:4px;margin:22px 0 16px;border:1px solid var(--line)}
+.tab{flex:1;border:0;background:transparent;border-radius:10px;padding:10px 4px;font:600 .9rem var(--font-ui);color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.tab .n{font-size:.76rem;opacity:.7;margin-left:3px}
+.swap{background:var(--surface);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px}
+.pair{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font:600 1rem var(--font-ui)}
+.pair s{color:var(--muted);font-weight:500}
+.pair .new{background:var(--swap);color:var(--deep);padding:3px 10px;border-radius:8px}
+.swap p{margin:8px 0 0;font-size:.95rem;color:var(--muted)}
+.checklist{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.checklist li+li{border-top:1px solid var(--line)}
+.checklist label{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;cursor:pointer}
+.checklist input{appearance:none;-webkit-appearance:none;flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);margin:1px 0 0;display:grid;place-items:center;background:var(--surface);cursor:pointer}
+.checklist input:checked{background:var(--deep);border-color:var(--deep)}
+.checklist input:checked::after{content:"";width:6px;height:11px;border:solid var(--on-deep);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.checklist input:checked+span{color:var(--muted);text-decoration:line-through}
+.checklist .from{display:block;font-size:.78rem;color:var(--muted);text-decoration:none}
+.badge{display:inline-block;font:700 .68rem var(--font-ui);padding:2px 7px;border-radius:6px;background:var(--mustard);color:var(--on-mustard);margin-left:6px;vertical-align:2px}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px;display:flex;gap:14px;cursor:pointer;transition:opacity .2s}
+.steps li::before{content:counter(s);flex:none;width:32px;height:32px;border-radius:10px;background:var(--deep);color:var(--on-deep);display:grid;place-items:center;font:800 .95rem var(--font-ui)}
+.steps li.done{opacity:.45}
+.steps li.done::before{content:"✓"}
+.part+.part{margin-top:22px}
+.part-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 2px 10px;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 130px)}
+.part-h h3{margin:0;font-size:1.15rem;letter-spacing:-.01em}
+.part-n{font:700 .78rem var(--font-ui);color:var(--on-deep);background:var(--deep);padding:3px 9px;border-radius:999px}
+.part-meta{flex-basis:100%;font:500 .85rem var(--font-ui);color:var(--muted)}
+.partnav{display:flex;gap:8px;overflow-x:auto;margin:0 -18px 16px;padding:2px 18px 4px;scrollbar-width:none}
+.partnav::-webkit-scrollbar{display:none}
+.pn{flex:none;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 12px;text-align:left}
+.pn b{display:block;font:700 .9rem var(--font-ui)}
+.pn span{font:500 .78rem var(--font-ui);color:var(--muted)}
+.pn.full{background:var(--swap);border-color:var(--swap)}
+.pn.full span{color:var(--deep);font-weight:700}
+.overview{margin-top:16px;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px 16px}
+.ov-k{font:700 .85rem var(--font-ui);color:var(--deep)}
+.overview ol{margin:8px 0 0;padding-left:1.3em}
+.overview li{margin:3px 0;font-family:var(--font-ui)}
+.overview li b{font-weight:600}
+.overview li span{color:var(--muted);font-size:.85rem;margin-left:8px}
+.hint{font:500 .85rem var(--font-ui);color:var(--muted);margin:0 0 12px}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:18px;padding:16px;margin-top:18px}
+.warn h3{font-size:1rem;margin:0 0 6px}
+.warn ul{margin:0;padding-left:1.2em}
+.ask{margin-top:18px}
+.ask .addrow{margin-top:0}
+.answer{margin-top:12px;background:var(--surface-2);border-radius:14px;padding:12px 14px;font-size:.95rem;white-space:pre-wrap}
+.qs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.qs button{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:6px 11px;font:500 .82rem var(--font-ui)}
+.fine{font-size:.82rem;color:var(--muted);margin-top:22px}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:var(--ink);color:var(--bg);font:600 .92rem var(--font-ui);padding:11px 18px;border-radius:14px;z-index:40;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion: no-preference){.enter{animation:enter .26s cubic-bezier(.2,.8,.2,1)}}
+@keyframes enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* component guide */
+.folds{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.fold{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.fold summary{list-style:none;cursor:pointer;padding:14px 16px;font:500 .98rem var(--font-ui);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::after{content:"";width:9px;height:9px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s;flex:none;margin-right:4px}
+.fold[open] summary::after{transform:rotate(-135deg)}
+.fold summary b{font-weight:700}
+.fold-in{padding:0 12px 12px}
+.fold-in .swap{box-shadow:none;background:var(--surface-2);margin-bottom:8px}
+.fold-in .checklist{box-shadow:none;background:var(--surface-2)}
+.plan{margin:0;padding:0 4px 4px 1.4em}
+.plan li{margin-bottom:6px}
+.comps{display:flex;flex-direction:column;gap:12px}
+.comp{width:100%;display:flex;align-items:center;gap:14px;text-align:left;border:0;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:16px 14px 16px 16px;transition:transform .12s}
+.comp:active{transform:scale(.985)}
+.comp .num{flex:none;width:40px;height:40px;border-radius:13px;background:var(--deep);color:var(--on-deep);display:grid;place-items:center;font:800 1.05rem var(--font-ui)}
+.comp .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.comp .body b{font:700 1.08rem var(--font-ui)}
+.comp .purpose{font-size:.9rem;color:var(--muted);line-height:1.4}
+.comp .req{font:600 .8rem var(--font-ui);color:var(--deep)}
+.comp .side{display:flex;align-items:center;gap:4px;flex:none}
+.comp .prog{font:700 .78rem var(--font-ui);color:var(--muted)}
+.comp.complete .num{background:var(--swap);color:var(--deep)}
+.comp.complete .prog{color:var(--deep)}
+.comp.finish{background:linear-gradient(135deg,color-mix(in srgb,var(--mustard) 26%,var(--surface)),var(--surface))}
+.comp.finish .num{background:var(--mustard);color:var(--on-mustard)}
+.tchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.tc{font:600 .76rem var(--font-ui);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:2px 8px;color:var(--ink)}
+.guide .g-top{padding:16px 0 4px}
+.guide .g-top h1{font-size:clamp(2rem,8vw,2.6rem);letter-spacing:-.035em;line-height:1;margin:10px 0 8px}
+.guide .g-top p{margin:0;color:var(--muted);font-size:1.02rem}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:18px}
+.fact{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:11px 13px}
+.fact small{display:block;font:600 .76rem var(--font-ui);color:var(--muted)}
+.fact b{font:700 .98rem/1.3 var(--font-ui)}
+.callout{border-radius:18px;padding:14px 16px;margin-top:14px}
+.callout b{font:700 .98rem var(--font-ui)}
+.callout p{margin:4px 0 0;font-size:.95rem}
+.callout ul{margin:6px 0 0;padding-left:1.2em;font-size:.95rem}
+.callout li{margin-bottom:4px}
+.req-c{background:var(--surface);border:2px dashed var(--deep)}
+.par-c{background:var(--swap)}
+.sub-c{background:var(--warn-bg);color:var(--warn-ink)}
+.done-c{background:var(--swap);text-align:center}
+.inlink{border:0;background:none;padding:0;font:700 1em var(--font-ui);color:var(--deep);text-decoration:underline;text-underline-offset:3px}
+.g-sec{margin-top:26px}
+.g-sec>h2,.g-sec .sec-h h2{font-size:1.2rem;margin:0 0 12px}
+.progress.small{height:5px;margin-bottom:10px}
+.st{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cue{font-size:.9rem;background:var(--surface-2);border-left:3px solid var(--mustard);border-radius:0 10px 10px 0;padding:7px 10px;color:var(--ink)}
+.cue b{font:700 .85rem var(--font-ui)}
+.tbtn{align-self:flex-start;border:1.5px solid var(--deep);background:transparent;color:var(--deep);border-radius:10px;padding:6px 11px;font:700 .85rem var(--font-ui)}
+.steps li.done .cue,.steps li.done .tbtn{display:none}
+.tipsbox{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+.tipsbox h3{margin:0 0 6px;font-size:1.05rem}
+.tipsbox ul{margin:0;padding-left:1.2em}
+.tipsbox li{margin-bottom:6px}
+.gnav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:28px}
+.gnav .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:12px 14px;border-radius:16px}
+.gnav .btn small{font:600 .76rem var(--font-ui);opacity:.75}
+.gnav .btn span{font:700 .98rem/1.2 var(--font-ui)}
+.gnav .btn.mustard{align-items:flex-end;text-align:right}
+.timers{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:25;display:flex;flex-direction:column;gap:6px;align-items:center;padding:0 14px;pointer-events:none}
+.timer{pointer-events:auto;width:100%;max-width:612px;display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--bg);border-radius:14px;padding:9px 10px 9px 14px;font-family:var(--font-ui);box-shadow:var(--shadow)}
+.timer .tl{flex:1;min-width:0;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer b{font-variant-numeric:tabular-nums;font-size:1.05rem}
+.timer button{border:0;background:transparent;color:inherit;width:30px;height:30px;border-radius:8px;font-weight:800}
+.timer.done{background:var(--mustard);color:var(--on-mustard)}
+body.has-timers .toast{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 70px)}
+body.has-timers main{padding-bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+</style>
+</head>
+<body>
+
+<header class="bar" id="bar"><div class="bar-in" id="barIn"></div></header>
+<main id="app"></main>
+
+<nav class="tabbar" aria-label="Main"><div class="tabbar-in" id="tabbar"></div></nav>
+<div class="timers" id="timers" aria-live="polite"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================= data ================= */
+const ALLERGENS = ["Peanuts","Tree nuts","Dairy","Eggs","Gluten","Soy","Fish","Shellfish","Sesame"];
+const DIETS = ["Vegetarian","Vegan","No pork","No alcohol"];
+const TINTS = ["var(--t1)","var(--t2)","var(--t3)","var(--t4)","var(--t5)","var(--t6)"];
+const POPULAR = [
+  ["Pad Thai","🍜","Thai noodles"],["Chicken Alfredo","🍝","Creamy pasta"],["Banana Bread","🍞","Easy bake"],
+  ["Beef Tacos","🌮","Weeknight"],["Fluffy Pancakes","🥞","Breakfast"],["Chocolate Chip Cookies","🍪","Classic"],
+  ["Butter Chicken","🍛","Indian curry"],["Caesar Salad","🥗","Fresh"]
+];
+const CATEGORIES = {
+  Breakfast:[["French Toast","🍞"],["Shakshuka","🍳"],["Waffles","🧇"],["Breakfast Burrito","🌯"]],
+  Dinner:[["Lasagna","🍝"],["Fried Rice","🍚"],["Chicken Parmesan","🍗"],["Beef Stir Fry","🥩"]],
+  Baking:[["Brownies","🍫"],["Cinnamon Rolls","🥐"],["Pizza Dough","🍕"],["Blueberry Muffins","🧁"]],
+  Desserts:[["Tiramisu","🍰"],["Cheesecake","🍰"],["Apple Pie","🥧"],["Chocolate Mousse","🍮"]],
+  Snacks:[["Hummus","🫘"],["Granola Bars","🥣"],["Loaded Nachos","🧀"],["Spring Rolls","🥟"]]
+};
+const TIPS = [
+  ["🥚","Egg-free baking","A tablespoon of ground flaxseed mixed with three tablespoons of water replaces one egg in most muffins and cookies."],
+  ["🫘","Aquafaba magic","The liquid from a can of chickpeas whips into stiff peaks like egg whites — great for meringue and mousse."],
+  ["🥥","Dairy-free creaminess","Full-fat coconut milk or blended soaked cashews (if nuts are safe for you) make sauces rich without cream."],
+  ["🌾","Watch the oats","Oats are naturally gluten-free but often processed with wheat. Look for ones labeled certified gluten-free."],
+  ["🧂","Hidden soy and wheat","Regular soy sauce contains wheat. Coconut aminos are a soy-free and gluten-free swap."],
+  ["🍽️","Clean cooking","Use a freshly washed board and pan when cooking for someone with allergies — crumbs and oil residue count."],
+  ["🥜","Seed butters","Sunflower seed butter stands in for peanut butter in sauces and baking. It can turn slightly green with baking soda — that's harmless."]
+];
+const EMOJI_BY_WORD = [["pasta|spaghetti|alfredo|lasagna|mac","🍝"],["noodle|ramen|pad thai|pho","🍜"],["taco|burrito|quesadilla","🌮"],["pizza","🍕"],["burger","🍔"],["cake|cheesecake|tiramisu","🍰"],["cookie","🍪"],["bread|toast","🍞"],["pancake","🥞"],["waffle","🧇"],["curry|masala|tikka","🍛"],["rice|risotto|paella","🍚"],["salad","🥗"],["soup|stew|chili","🍲"],["chicken","🍗"],["steak|beef","🥩"],["fish|salmon|tuna","🐟"],["shrimp|prawn","🍤"],["egg|omelet|shakshuka","🍳"],["pie","🥧"],["muffin|cupcake","🧁"],["sandwich","🥪"],["chocolate|brownie","🍫"],["sushi","🍣"],["dumpling|roll","🥟"]];
+const emojiFor = name => { const n = (name||"").toLowerCase(); for (const [re, e] of EMOJI_BY_WORD) if (new RegExp(re).test(n)) return e; return "🍽️"; };
+const tintFor = name => { let x = 0; for (const c of (name||"")) x = (x * 31 + c.charCodeAt(0)) >>> 0; return TINTS[x % TINTS.length]; };
+
+/* ================= state ================= */
+const KEY = "safeplate:v3";
+let S = { name:"", allergies:[], custom:[], diets:[], recent:[], saved:[], shop:[] };
+try {
+  const old = JSON.parse(localStorage.getItem("safeplate:v2") || "null");
+  if (old) { S.allergies = (old.selected||[]).filter(a => ALLERGENS.includes(a)); S.custom = old.custom || []; S.recent = old.recent || []; }
+  Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}"));
+} catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const avoidList = () => [...S.allergies, ...S.custom];
+const rid = (r, a) => (r.title + "|" + a.slice().sort().join(",")).toLowerCase();
+const isSaved = id => S.saved.some(x => x.id === id);
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+function h(tag, props = {}, ...kids){
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === "class") n.className = v;
+    else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat(Infinity).forEach(k => k != null && k !== false && n.append(k.nodeType ? k : document.createTextNode(k)));
+  return n;
+}
+const ico = s => { const t = document.createElement("template"); t.innerHTML = s.trim(); return t.content.firstChild; };
+const I = {
+  back:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  search:'<svg class="s" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg>',
+  heartFill:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg>',
+  heartLine:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg>',
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11h11l2-8H6.5"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.3-3.8 4.2-5.5 7.5-5.5s6.2 1.7 7.5 5.5"/></svg>',
+  chev:'<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  tick:'<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  logo:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#fff" stroke-width="2"/><path d="M8 12.2l2.7 2.6L16.2 9" stroke="#F4B63F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+let toastT;
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2000); }
+addEventListener("scroll", () => $("bar").classList.toggle("scrolled", scrollY > 4), {passive:true});
+
+/* ================= navigation ================= */
+let tabNow = "home", ctl = null;
+const history_ = [];
+function setBar({title, back, right} = {}){
+  const b = $("barIn"); b.replaceChildren();
+  if (back) b.append(h("button", {class:"iconbtn", "aria-label":"Back", onclick:back}, ico(I.back)));
+  if (title) b.append(h("div", {class:"bar-title"}, title));
+  else b.append(h("div", {class:"logo"}, h("span", {class:"mark", "aria-hidden":"true"}, ico(I.logo)), "Safe Plate"), h("div", {class:"spacer"}));
+  if (right) b.append(right);
+}
+function renderTabbar(){
+  const defs = [["home","Home",I.home],["saved","Saved",I.heart],["list","Shopping",I.cart],["profile","Me",I.user]];
+  const open = S.shop.filter(x => !x.done).length;
+  $("tabbar").replaceChildren(...defs.map(([id, label, icon]) => h("button", {class:"tb", "aria-current": tabNow === id ? "page" : null, onclick: () => go(id)},
+    ico(icon), label, id === "list" && open ? h("span", {class:"cnt"}, String(open)) : null)));
+}
+function mount(node){ const a = $("app"); node.classList.add("enter"); a.replaceChildren(node); scrollTo(0, 0); }
+function go(tab){
+  if (ctl) ctl.abort();
+  tabNow = tab; renderTabbar();
+  ({home:showHome, saved:showSaved, list:showList, profile:showProfile})[tab]();
+}
+
+/* ================= home ================= */
+function greeting(){ const hr = new Date().getHours(); return hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening"; }
+function showHome(){
+  setBar({});
+  const input = h("input", {type:"text", placeholder:"What do you want to make?", autocomplete:"off", enterkeyhint:"go", "aria-label":"Dish name"});
+  const msg = h("p", {class:"formmsg hidden", role:"alert"});
+  const submit = () => {
+    const d = input.value.trim();
+    if (!d) { msg.textContent = "Type the name of a dish first."; msg.classList.remove("hidden"); input.focus(); return; }
+    generate(d);
+  };
+  input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+  input.addEventListener("input", () => msg.classList.add("hidden"));
+
+  const list = avoidList();
+  const forCard = list.length
+    ? h("button", {class:"card forcard", onclick:() => go("profile")},
+        h("span", {class:"ic", "aria-hidden":"true"}, "🧡"),
+        h("span", {class:"txt"}, h("b", {}, "Cooking " + list.length + "-allergen safe"), h("span", {}, "Free of " + list.join(", "))), ico(I.chev))
+    : h("button", {class:"card forcard setup", onclick:() => go("profile")},
+        h("span", {class:"ic", "aria-hidden":"true"}, "👋"),
+        h("span", {class:"txt"}, h("b", {}, "Set up your allergies"), h("span", {}, "Takes 10 seconds. Every recipe adapts to it.")), ico(I.chev));
+
+  let cat = "Dinner";
+  const catRow = h("div", {class:"cats", role:"group", "aria-label":"Categories"});
+  const catGrid = h("div", {class:"grid"});
+  const renderCats = () => {
+    catRow.replaceChildren(...Object.keys(CATEGORIES).map(c => h("button", {class:"cat", "aria-pressed": String(c === cat), onclick:() => { cat = c; renderCats(); }}, c)));
+    catGrid.replaceChildren(...CATEGORIES[cat].map(([n, e]) => h("button", {class:"gi", onclick:() => generate(n)},
+      h("span", {class:"em", style:"background:" + tintFor(n)}, e), h("b", {}, n))));
+  };
+  renderCats();
+
+  const tip = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
+
+  mount(h("div", {},
+    h("section", {class:"hello"},
+      h("small", {}, greeting() + (S.name ? ", " + S.name : "")),
+      h("h1", {}, "What are we cooking today?"),
+      h("div", {class:"search"}, h("div", {class:"field"}, ico(I.search), input), h("button", {class:"go", onclick:submit, "aria-label":"Make it safe"}, "Go")),
+      msg,
+      forCard
+    ),
+    h("section", {class:"section"},
+      h("div", {class:"sec-h"}, h("h2", {}, "Popular to make safe")),
+      h("div", {class:"rail"}, POPULAR.map(([n, e, s]) => h("button", {class:"tile", onclick:() => generate(n)},
+        h("div", {class:"art", style:"background:" + tintFor(n)}, e), h("b", {}, n), h("span", {}, s))))
+    ),
+    S.recent.length ? h("section", {class:"section"},
+      h("div", {class:"sec-h"}, h("h2", {}, "Jump back in")),
+      h("ul", {class:"rows"}, S.recent.slice(0, 4).map(r => h("li", {}, recipeRow(r))))
+    ) : null,
+    h("section", {class:"section"},
+      h("div", {class:"sec-h"}, h("h2", {}, "Browse ideas")),
+      catRow, catGrid
+    ),
+    h("section", {class:"section"},
+      h("div", {class:"tip"}, h("span", {class:"ic", "aria-hidden":"true"}, tip[0]), h("div", {}, h("b", {}, "Tip: " + tip[1]), h("p", {}, tip[2])))
+    )
+  ));
+}
+function recipeRow(r){
+  return h("button", {class:"row", onclick:() => showRecipe(r.recipe, r.allergies, true)},
+    h("span", {class:"em", style:"background:" + tintFor(r.recipe.title)}, emojiFor(r.recipe.title)),
+    h("span", {class:"txt"}, h("span", {class:"t"}, r.recipe.title), h("span", {class:"s"}, [r.recipe.total_time, r.allergies.length ? "Free of " + r.allergies.join(", ") : null].filter(Boolean).join("  ·  "))),
+    ico(I.chev));
+}
+
+/* ================= saved ================= */
+function showSaved(){
+  setBar({});
+  mount(h("div", {},
+    h("div", {class:"pagehead"}, h("h1", {}, "Saved recipes"), h("p", {}, "Your favorites, ready to cook anytime — even offline.")),
+    S.saved.length
+      ? h("ul", {class:"rows", style:"margin-top:14px"}, S.saved.map(r => h("li", {}, recipeRow(r))))
+      : h("div", {class:"empty"}, h("div", {class:"big"}, "💚"), h("h2", {}, "Nothing saved yet"),
+          h("p", {}, "Tap the heart on any recipe to keep it here."), h("button", {class:"btn mustard", onclick:() => go("home")}, "Find a recipe"))
+  ));
+}
+
+/* ================= shopping list ================= */
+function showList(){
+  setBar({});
+  const input = h("input", {type:"text", placeholder:"Add an item", "aria-label":"Add an item"});
+  const add = () => { const v = input.value.trim(); if (!v) return; S.shop.push({id:Date.now()+Math.random(), text:v, done:false, from:""}); save(); showList(); renderTabbar(); };
+  input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  const groups = {};
+  S.shop.forEach(x => (groups[x.from || "My items"] ||= []).push(x));
+  const doneCount = S.shop.filter(x => x.done).length;
+  mount(h("div", {},
+    h("div", {class:"pagehead"}, h("h1", {}, "Shopping list"), h("p", {}, "Add ingredients from any recipe, then tick them off at the store.")),
+    h("div", {class:"addrow", style:"margin:16px 0 4px"}, input, h("button", {class:"btn", onclick:add}, "Add")),
+    S.shop.length ? h("div", {},
+      Object.entries(groups).map(([g, items]) => h("div", {class:"section", style:"margin-top:18px"},
+        h("div", {class:"sec-h"}, h("h2", {style:"font-size:1rem"}, g)),
+        h("ul", {class:"checklist"}, items.map(x => h("li", {}, h("label", {},
+          h("input", {type:"checkbox", checked:x.done, onchange:e => { x.done = e.target.checked; save(); renderTabbar(); }}),
+          h("span", {}, x.text))))))),
+      h("div", {style:"display:flex;gap:10px;margin-top:18px"},
+        doneCount ? h("button", {class:"btn soft", style:"flex:1", onclick:() => { S.shop = S.shop.filter(x => !x.done); save(); showList(); renderTabbar(); }}, "Remove checked (" + doneCount + ")") : null,
+        h("button", {class:"btn danger", style:"flex:1", onclick:() => { if (confirm("Clear the whole list?")) { S.shop = []; save(); showList(); renderTabbar(); } }}, "Clear all"))
+    ) : h("div", {class:"empty"}, h("div", {class:"big"}, "🛒"), h("h2", {}, "Your list is empty"), h("p", {}, "Open a recipe and tap \u201cAdd to list\u201d to bring its ingredients here."))
+  ));
+}
+
+/* ================= profile ================= */
+function chip(name, on, onClick, removable){
+  const b = h("button", {type:"button", class:"chip", "aria-pressed": String(on), onclick:onClick, "aria-label": removable ? "Remove " + name : null}, ico(I.tick), name);
+  if (removable) b.append(h("span", {"aria-hidden":"true", style:"font-weight:800"}, "×"));
+  return b;
+}
+function showProfile(){
+  setBar({});
+  const nameIn = h("input", {type:"text", placeholder:"Your first name (optional)", value:S.name, "aria-label":"Your name"});
+  nameIn.addEventListener("change", () => { S.name = nameIn.value.trim(); save(); toast("Saved"); });
+  const aWrap = h("div", {class:"chips"}), cWrap = h("div", {class:"chips", style:"margin-top:10px"}), dWrap = h("div", {class:"chips"});
+  const render = () => {
+    aWrap.replaceChildren(...ALLERGENS.map(n => chip(n, S.allergies.includes(n), () => { S.allergies = S.allergies.includes(n) ? S.allergies.filter(x => x !== n) : [...S.allergies, n]; save(); render(); })));
+    cWrap.replaceChildren(...S.custom.map(n => chip(n, true, () => { S.custom = S.custom.filter(x => x !== n); save(); render(); }, true)));
+    dWrap.replaceChildren(...DIETS.map(n => chip(n, S.diets.includes(n), () => { S.diets = S.diets.includes(n) ? S.diets.filter(x => x !== n) : [...S.diets, n]; save(); render(); })));
+  };
+  render();
+  const addIn = h("input", {type:"text", placeholder:"Add another, e.g. mustard, kiwi", "aria-label":"Add another allergy"});
+  const add = () => {
+    addIn.value.split(",").map(s => s.trim()).filter(Boolean).forEach(s => { if (!avoidList().some(x => x.toLowerCase() === s.toLowerCase())) S.custom.push(s); });
+    addIn.value = ""; save(); render();
+  };
+  addIn.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+
+  mount(h("div", {class:"stack"},
+    h("div", {class:"pagehead"}, h("h1", {}, "My profile"), h("p", {}, "Everything here is saved on this device only.")),
+    h("section", {class:"card"}, h("h3", {}, "Name"), h("p", {class:"sub"}, "So the app can greet you."), h("div", {class:"addrow", style:"margin:0"}, nameIn)),
+    h("section", {class:"card"}, h("h3", {}, "Allergies"), h("p", {class:"sub"}, "Every recipe is rewritten to avoid these completely."), aWrap, cWrap,
+      h("div", {class:"addrow"}, addIn, h("button", {class:"btn", onclick:add}, "Add"))),
+    h("section", {class:"card"}, h("h3", {}, "Also avoid"), h("p", {class:"sub"}, "Diet preferences recipes should follow."), dWrap),
+    h("button", {class:"btn mustard wide", onclick:showSafetyCard}, "Show my allergy card"),
+    h("p", {class:"hint", style:"text-align:center;margin-top:8px"}, "A big, clear card to show waiters or hosts."),
+    h("button", {class:"btn danger wide", style:"margin-top:26px", onclick:() => { if (confirm("Delete your profile, saved recipes and shopping list from this device?")) { try { localStorage.removeItem(KEY); } catch (e) {} S = {name:"", allergies:[], custom:[], diets:[], recent:[], saved:[], shop:[]}; go("home"); } }}, "Reset all app data")
+  ));
+}
+function showSafetyCard(){
+  setBar({title:"Allergy card", back:() => go("profile")});
+  const list = avoidList();
+  mount(h("div", {style:"padding-top:12px"},
+    list.length ? h("div", {class:"scard"},
+      h("div", {class:"k"}, S.name ? S.name + " has food allergies" : "I have food allergies"),
+      h("h2", {}, "Please make sure my food contains none of these:"),
+      h("ul", {}, list.map(a => h("li", {}, a))),
+      h("p", {}, "This includes sauces, oils, garnishes and anything cooked on shared surfaces. Thank you for checking with the kitchen!"),
+      S.diets.length ? h("p", {class:"also"}, "I also follow: " + S.diets.join(", ")) : null)
+    : h("div", {class:"empty"}, h("div", {class:"big"}, "🪪"), h("h2", {}, "No allergies added"), h("p", {}, "Add your allergies on the Me tab to build your card."))
+  ));
+}
+
+/* ================= Claude ================= */
+const samplePromise = (window.claude && claude.use) ? claude.use("sample") : Promise.resolve(null);
+async function askClaude(prompt, {signal, json} = {}){
+  const sample = await samplePromise;
+  if (sample) return json ? sample.json(prompt, {signal, modelTier:"default"}) : (await sample(prompt, {signal, modelTier:"quick"})).text;
+  let res;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST", signal, headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, messages:[{role:"user", content:prompt}]})});
+  } catch (e) { if (e && e.name === "AbortError") throw {code:"cancelled"}; throw {code:"no_connection"}; }
+  if (!res.ok) throw {code: res.status === 429 ? "rate_limited" : "no_connection"};
+  const data = await res.json();
+  const text = (data.content || []).map(b => b.type === "text" ? b.text : "").join("");
+  if (!json) return text;
+  const c = text.replace(/```json|```/g, "").trim();
+  try { return JSON.parse(c.slice(c.indexOf("{"), c.lastIndexOf("}") + 1)); } catch (e) { throw {code:"bad_output"}; }
+}
+const ERR = {
+  no_connection:["Can't reach Claude from here","Open Safe Plate from its link in the Claude app or on claude.ai while signed in. It can't write recipes in a regular browser tab or from a downloaded copy."],
+  not_granted:["Permission needed","Safe Plate uses your Claude account to write recipes. Reload the app and tap Allow when asked."],
+  rate_limited:["Too many requests","Wait a minute, then try again."]
+};
+
+/* ================= generate ================= */
+function generate(dish){
+  const list = avoidList();
+  if (!list.length && !S.diets.length) { toast("Add your allergies first"); go("profile"); return; }
+  const back = () => { if (ctl) ctl.abort(); go(tabNow); };
+  setBar({title:dish, back});
+  const bar = h("i"), msg = h("p", {}, "Checking every ingredient against your list.");
+  mount(h("div", {class:"loading"},
+    h("div", {class:"r-hero", style:"background:" + tintFor(dish) + ";height:120px;margin-bottom:20px"}, emojiFor(dish)),
+    h("h2", {}, "Making " + dish + " safe"), msg, h("p", {class:"hint", style:"margin-top:-12px"}, "Detailed guides take about a minute."),
+    h("div", {class:"progress", role:"progressbar", "aria-label":"Working"}, bar),
+    [0,1].map(() => h("div", {class:"sk"}, h("div", {class:"skl", style:"width:40%"}), h("div", {class:"skl"}), h("div", {class:"skl", style:"width:75%"}))),
+    h("button", {class:"btn soft wide", onclick:back}, "Cancel")
+  ));
+  const lines = ["Checking every ingredient against your list.","Finding swaps that keep the taste and texture.","Looking for hidden allergens in sauces and mixes.","Working out the parts and the best order.","Writing beginner-friendly steps for each part.","Double-checking every step uses your swaps."];
+  let i = 0, pct = 8; bar.style.width = pct + "%";
+  const t = setInterval(() => { if (!bar.isConnected) return clearInterval(t); pct = Math.min(92, pct + (92 - pct) * .12); bar.style.width = pct + "%"; if (++i % 4 === 0) msg.textContent = lines[(i/4) % lines.length]; }, 900);
+
+  const my = ctl = new AbortController();
+  const prompt = `You are a patient cooking teacher who adapts recipes for food allergies and writes for complete beginners.
+Dish requested: "${dish}"
+Must completely avoid (allergies): ${list.join(", ") || "none"}.
+Diet preferences to follow: ${S.diets.join(", ") || "none"}.
+
+SAFETY RULES
+- The recipe must contain NONE of those allergens, including derivatives and hidden sources (e.g. butter/whey/casein/ghee for dairy; soy sauce has wheat and soy; pesto often has nuts; worcestershire has fish; many breads contain egg or milk).
+- Decide every substitution first and list it in "swaps". After that, every ingredient list and every step must name the SUBSTITUTE. Never write an instruction that assumes an original ingredient is present (e.g. never "knead until elastic" for gluten-free dough, never "melt the butter" if butter was replaced).
+- If a substitution changes hydration, texture, rising/resting time, cooking time, temperature, or handling, adjust the method accordingly and explain the change in that component's "sub_notes" (e.g. "Gluten-free dough is stickier and won't stretch — press it out with oiled hands instead of stretching").
+- Stay close to the original dish's taste and texture with widely available substitutes.
+
+STRUCTURE
+- Break the dish into its natural COMPONENTS: the parts that are prepared separately (e.g. pizza: Dough, Tomato sauce, Toppings; cake: Batter, Frosting; curry: Spice paste, Curry base, Rice; burger: Patties, Sauce, Toppings; soup may just be Base and Garnish). Do not force a fixed template; use what suits this dish (usually 2-5).
+- Make from scratch any component that commonly hides their allergens.
+- Order components by when they should be STARTED (long rises/marinades/chilling first).
+- Put the final assembly / cooking / serving stage in "finish", not in "components".
+- In "requires" list component names that must be finished before this one can start (exact names). In "parallel" say what the cook can do while this component rests, rises, chills, or cooks (e.g. "While the dough rises, make the tomato sauce.").
+- "plan": 2-4 short bullets giving the most efficient overall order.
+
+INSTRUCTIONS
+- Beginner-friendly, plain language, one action per step, with exact quantities, temperatures (°C and °F), and timings.
+- For each step where it helps, give a "cue": what it should look, feel, smell, or sound like when done.
+- For steps with a wait or cook time the cook should time, set "timer_min" to the minutes (else 0).
+- Include resting/rising/chilling steps with the environment (e.g. "a warm spot around 25°C / 77°F, covered").
+- "tips": important tips, warnings, and make-ahead/storage notes for that component.
+- Keep it tight: at most 10 steps per component, each step 1-2 sentences.
+
+If the name isn't a recognizable dish, set "title" to "Unknown dish", explain in "summary", and leave arrays empty.
+
+Respond with ONLY a JSON object, no markdown:
+{"title":"dish name","summary":"1-2 sentence overview","servings":number,"total_time":"e.g. 2 hr 15 min","difficulty":"Easy|Medium|Hard",
+"swaps":[{"original":"traditional ingredient","replacement":"safe substitute","why":"what changes and one tip"}],
+"ingredients":[{"item":"total amount + ingredient for the whole recipe","changed":true|false}],
+"plan":["efficient-order bullet"],
+"components":[{"name":"e.g. Dough","purpose":"one sentence on what this part is","prep_time":"e.g. 15 min","cook_time":"e.g. 10 min or empty","wait_time":"e.g. Rise 1 hr or empty","temperature":"e.g. Rise at 25°C / 77°F or empty","requires":[],"parallel":"or empty",
+  "ingredients":[{"item":"amount + ingredient","changed":true|false}],
+  "sub_notes":["how a substitution changes this part's method"],
+  "steps":[{"text":"instruction","cue":"visual/texture cue or empty","timer_min":0}],
+  "tips":["tip or warning"]}],
+"finish":{same shape as a component, for final assembly/cooking/serving},
+"watch_out":["store-bought items in THIS recipe to check labels on, or cross-contamination tips"]}`;
+  askClaude(prompt, {signal:my.signal, json:true}).then(r => {
+    if (my !== ctl) return;
+    if (!r || !r.title) throw {code:"bad_output"};
+    if (r.title === "Unknown dish") { showRecipe(r, list, false); return; }
+    const entry = {id:rid(r, list), recipe:r, allergies:list};
+    S.recent = [entry, ...S.recent.filter(x => x.id !== entry.id)].slice(0, 10); save();
+    showRecipe(r, list, false);
+  }).catch(e => {
+    if (my !== ctl) return;
+    if (e && e.code === "cancelled") return;
+    const [tt, bb] = ERR[e && e.code] || ["Couldn't make that recipe","Check the dish name and try again."];
+    setBar({title:"", back});
+    mount(h("div", {class:"empty", style:"padding-top:60px"}, h("div", {class:"big"}, "😕"), h("h2", {}, tt), h("p", {}, bb),
+      h("button", {class:"btn mustard", onclick:() => generate(dish)}, "Try again")));
+  }).finally(() => { if (my === ctl) ctl = null; });
+}
+
+/* ================= recipe ================= */
+const PROG = {};                      // step progress per recipe, this session
+const hasVal = v => v != null && String(v).trim() !== "" && !/^(0|none|n\/a|-|—|0 ?min(utes)?)$/i.test(String(v).trim());
+function normalize(r){
+  if (r._n) return r;
+  const toIng = i => typeof i === "string" ? {item:i, changed:false} : {item:i.item || "", changed:!!i.changed};
+  const toStep = s => typeof s === "string" ? {text:s, cue:"", timer_min:0} : {text:s.text || "", cue:s.cue || "", timer_min:Math.max(0, +s.timer_min || 0)};
+  const arr = v => Array.isArray(v) ? v.filter(Boolean) : (v ? [v] : []);
+  const toComp = c => ({
+    name:c.name || "Method", purpose:c.purpose || "",
+    prep_time:c.prep_time || "", cook_time:c.cook_time || "", wait_time:c.wait_time || c.time || "", temperature:c.temperature || "",
+    requires:arr(c.requires), parallel:c.parallel || "",
+    ingredients:(c.ingredients || []).map(toIng), sub_notes:arr(c.sub_notes),
+    steps:(c.steps || []).map(toStep), tips:arr(c.tips)
+  });
+  const src = r.components || r.parts || ((r.steps || []).length ? [{name:"Method", ingredients:r.ingredients, steps:r.steps}] : []);
+  const components = src.map(toComp);
+  const finish = r.finish && (r.finish.steps || []).length ? toComp(r.finish) : null;
+  const all = [...components, finish].filter(Boolean);
+  return {...r, _n:true, components, finish, swaps:r.swaps || [], plan:arr(r.plan), watch_out:arr(r.watch_out),
+    ingredients:((r.ingredients && r.ingredients.length) ? r.ingredients : all.flatMap(c => c.ingredients)).map(toIng)};
+}
+const stagesOf = r => [...r.components, r.finish].filter(Boolean);
+function timeChips(c, compact){
+  const t = [["Prep", c.prep_time, "🔪"], ["Cook", c.cook_time, "🔥"], ["Wait", c.wait_time, "⏳"], ["Temp", c.temperature, "🌡️"]].filter(x => hasVal(x[1]));
+  return t.map(([k, v, e]) => h("span", {class:"tc"}, e + " " + (compact ? v : k + ": " + v)));
+}
+
+/* ---------- step timers ---------- */
+const timers = [];
+let timerTick = null, audioCtx = null;
+function beep(){
+  try {
+    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    [0, .35, .7].forEach(d => { const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; g.gain.setValueAtTime(.18, audioCtx.currentTime + d); g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + d + .3);
+      o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime + d); o.stop(audioCtx.currentTime + d + .3); });
+  } catch (e) {}
+}
+function startTimer(label, min){
+  try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  timers.push({id:Math.random(), label, end:Date.now() + min * 60000, done:false});
+  toast("Timer started: " + min + " min");
+  renderTimers();
+  if (!timerTick) timerTick = setInterval(renderTimers, 1000);
+}
+const fmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)), hh = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return (hh ? hh + ":" + String(m).padStart(2, "0") : m) + ":" + String(ss).padStart(2, "0"); };
+function renderTimers(){
+  const now = Date.now();
+  timers.forEach(t => { if (!t.done && t.end <= now) { t.done = true; toast("⏰ " + t.label + " — time's up!"); beep(); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (e) {} } });
+  const box = $("timers");
+  box.replaceChildren(...timers.map(t => h("div", {class:"timer" + (t.done ? " done" : "")},
+    h("span", {class:"tl"}, "⏱ " + t.label), h("b", {}, t.done ? "Done!" : fmt(t.end - now)),
+    h("button", {"aria-label":"Dismiss timer", onclick:() => { timers.splice(timers.indexOf(t), 1); renderTimers(); }}, "✕"))));
+  document.body.classList.toggle("has-timers", timers.length > 0);
+  if (!timers.length && timerTick) { clearInterval(timerTick); timerTick = null; }
+}
+
+/* ---------- overview ---------- */
+function showRecipe(r0, list, _unused, focusIdx){
+  const r = normalize(r0);
+  const id = rid(r, list);
+  const prog = PROG[id] ||= {};
+  const back = () => go(tabNow);
+  const heart = h("button", {class:"iconbtn", "aria-label":"Save recipe"});
+  const paintHeart = () => { const on = isSaved(id); heart.replaceChildren(ico(on ? I.heartFill : I.heartLine)); heart.classList.toggle("on", on); heart.setAttribute("aria-pressed", String(on)); };
+  heart.onclick = () => {
+    if (isSaved(id)) { S.saved = S.saved.filter(x => x.id !== id); toast("Removed from saved"); }
+    else { S.saved.unshift({id, recipe:r, allergies:list}); toast("Saved to your recipes"); }
+    save(); paintHeart();
+  };
+  paintHeart();
+  const unknown = r.title === "Unknown dish";
+  setBar({title:r.title, back, right: unknown ? null : heart});
+
+  if (unknown) {
+    mount(h("div", {}, h("div", {class:"r-hero", style:"background:var(--t3)"}, "🤔"),
+      h("section", {class:"r-head"}, h("h1", {}, "We couldn't find that dish"), h("p", {}, r.summary || "Try a different name.")),
+      h("button", {class:"btn mustard wide", style:"margin-top:20px", onclick:() => go("home")}, "Search again")));
+    return;
+  }
+
+  const stages = stagesOf(r);
+  const card = (c, idx) => {
+    const isFinish = r.finish && idx === stages.length - 1;
+    const d = (prog[idx] || []).filter(Boolean).length, total = c.steps.length, complete = total && d === total;
+    return h("button", {class:"comp" + (isFinish ? " finish" : "") + (complete ? " complete" : ""), id:"comp-" + idx, onclick:() => showComponent(r, list, idx)},
+      h("span", {class:"num", "aria-hidden":"true"}, complete ? "✓" : isFinish ? "★" : String(idx + 1)),
+      h("span", {class:"body"},
+        h("b", {}, c.name, c.ingredients.some(i => i.changed) ? h("span", {class:"badge"}, "SWAP") : null),
+        c.purpose ? h("span", {class:"purpose"}, c.purpose) : null,
+        h("span", {class:"tchips"}, timeChips(c, true)),
+        c.requires.length ? h("span", {class:"req"}, "⏮ After: " + c.requires.join(", ")) : null),
+      h("span", {class:"side"}, total ? h("span", {class:"prog"}, complete ? "Done" : d + "/" + total) : null, ico(I.chev)));
+  };
+
+  const addToList = () => {
+    const have = new Set(S.shop.map(x => x.text.toLowerCase()));
+    let n = 0;
+    r.ingredients.forEach(i => { if (i.item && !have.has(i.item.toLowerCase())) { S.shop.push({id:Date.now() + Math.random(), text:i.item, done:false, from:r.title}); n++; } });
+    save(); renderTabbar(); toast(n ? "Added " + n + " items to your list" : "Already on your list");
+  };
+
+  mount(h("div", {},
+    h("div", {class:"r-hero", style:"background:" + tintFor(r.title)}, emojiFor(r.title)),
+    h("section", {class:"r-head"},
+      h("h1", {}, r.title), r.summary ? h("p", {}, r.summary) : null,
+      h("div", {class:"stats"},
+        h("div", {class:"stat"}, h("b", {}, r.total_time || "—"), h("small", {}, "Total time")),
+        h("div", {class:"stat"}, h("b", {}, r.servings ? String(r.servings) : "—"), h("small", {}, "Servings")),
+        h("div", {class:"stat"}, h("b", {}, r.difficulty || "—"), h("small", {}, "Difficulty"))),
+      h("div", {class:"freeof"}, list.map(a => h("span", {class:"tag"}, a + "-free")), S.diets.map(d => h("span", {class:"tag"}, d))),
+      h("div", {class:"actions"},
+        h("button", {class:"btn mustard", onclick:addToList}, ico(I.cart.replace("viewBox", 'width="18" height="18" viewBox')), "Add to list"),
+        h("button", {class:"btn soft", onclick:() => generate(r.title)}, "↻ New version"))
+    ),
+
+    h("div", {class:"folds"},
+      r.swaps.length ? h("details", {class:"fold"},
+        h("summary", {}, h("span", {}, "🔄 ", h("b", {}, r.swaps.length + (r.swaps.length === 1 ? " swap" : " swaps")), " made for your allergies")),
+        h("div", {class:"fold-in"}, r.swaps.map(s => h("div", {class:"swap"},
+          h("div", {class:"pair"}, h("s", {}, s.original), h("span", {"aria-label":"becomes"}, "→"), h("span", {class:"new"}, s.replacement)),
+          s.why ? h("p", {}, s.why) : null)))) : null,
+      h("details", {class:"fold"},
+        h("summary", {}, h("span", {}, "🧺 ", h("b", {}, "Ingredients"), " · " + r.ingredients.length + " items")),
+        h("div", {class:"fold-in"}, h("ul", {class:"checklist"}, r.ingredients.map(i => h("li", {}, h("label", {}, h("input", {type:"checkbox"}),
+          h("span", {}, i.item, i.changed ? h("span", {class:"badge"}, "SWAP") : null))))))),
+      r.plan.length ? h("details", {class:"fold", open:true},
+        h("summary", {}, h("span", {}, "⚡ ", h("b", {}, "Game plan"), " · work smarter")),
+        h("div", {class:"fold-in"}, h("ul", {class:"plan"}, r.plan.map(p => h("li", {}, p))))) : null
+    ),
+
+    r.components.length ? h("section", {class:"section"},
+      h("div", {class:"sec-h"}, h("h2", {}, r.components.length > 1 ? "Make it in " + r.components.length + " parts" : "Make it")),
+      h("p", {class:"hint"}, "Tap a part for its full step-by-step guide."),
+      h("div", {class:"comps"}, r.components.map((c, i) => card(c, i)))) : null,
+
+    r.finish ? h("section", {class:"section"},
+      h("div", {class:"sec-h"}, h("h2", {}, "Finish & serve")),
+      card(r.finish, stages.length - 1)) : null,
+
+    r.watch_out.length ? h("div", {class:"warn"}, h("h3", {}, "⚠️ Check these labels"), h("ul", {}, r.watch_out.map(w => h("li", {}, w)))) : null,
+    askBox(r, list),
+    h("p", {class:"fine"}, "Brands change their ingredients, so always read labels and \u201cmay contain\u201d warnings. For severe allergies, follow your doctor's guidance.")
+  ));
+  if (focusIdx != null) { const el = document.getElementById("comp-" + focusIdx); if (el) el.scrollIntoView({block:"center"}); }
+}
+
+/* ---------- ask about this recipe ---------- */
+function askBox(r, list){
+  const qIn = h("input", {type:"text", placeholder:"e.g. Can I make it in an air fryer?", "aria-label":"Ask about this recipe"});
+  const ans = h("div", {class:"answer hidden", "aria-live":"polite"});
+  const askBtn = h("button", {class:"btn"}, "Ask");
+  const ask = async q => {
+    q = (q || qIn.value).trim(); if (!q) return;
+    qIn.value = q; askBtn.disabled = true; ans.classList.remove("hidden"); ans.textContent = "Thinking…";
+    try {
+      const ctx = stagesOf(r).map(c => ({part:c.name, ingredients:c.ingredients.map(i => i.item), steps:c.steps.map(s => s.text)}));
+      const txt = await askClaude(`A home cook with these allergies: ${list.join(", ") || "none"} (diet: ${S.diets.join(", ") || "none"}) is making this allergy-safe recipe "${r.title}", made in parts:
+${JSON.stringify(ctx)}
+Their question: "${q}"
+Answer in plain text (no markdown), 2-5 short sentences, beginner-friendly. Never suggest anything containing their allergens.`);
+      ans.textContent = txt.trim();
+    } catch (e) { ans.textContent = (ERR[e && e.code] || ["", "Couldn't get an answer. Try again."])[1]; }
+    finally { askBtn.disabled = false; }
+  };
+  askBtn.onclick = () => ask();
+  qIn.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); ask(); } });
+  return h("section", {class:"card ask"},
+    h("h3", {}, "Ask about this recipe"), h("p", {class:"sub"}, "Swaps, timing, equipment — anything."),
+    h("div", {class:"qs"}, ["Can I make it ahead?", "Make it kid-friendly", "How do I store leftovers?"].map(q => h("button", {onclick:() => ask(q)}, q))),
+    h("div", {class:"addrow"}, qIn, askBtn), ans);
+}
+
+/* ---------- focused component guide ---------- */
+function showComponent(r, list, idx, keepScroll){
+  const id = rid(r, list), prog = PROG[id] ||= {};
+  const stages = stagesOf(r), c = stages[idx];
+  const isFinish = r.finish && idx === stages.length - 1;
+  const done = prog[idx] ||= c.steps.map(() => false);
+  const toOverview = () => showRecipe(r, list, false, idx);
+  setBar({title:c.name, back:toOverview});
+
+  const nDone = done.filter(Boolean).length;
+  const facts = [["🔪", "Prep", c.prep_time], ["🔥", "Cook", c.cook_time], ["⏳", "Rest / rise / chill", c.wait_time], ["🌡️", "Temperature", c.temperature]].filter(f => hasVal(f[2]));
+  const prev = idx > 0 ? stages[idx - 1] : null, next = idx < stages.length - 1 ? stages[idx + 1] : null;
+
+  const stepEls = c.steps.map((s, si) => h("li", {class:done[si] ? "done" : "", onclick:() => { done[si] = !done[si]; showComponent(r, list, idx, true); }},
+    h("div", {class:"st"},
+      h("span", {}, s.text),
+      hasVal(s.cue) ? h("span", {class:"cue"}, h("b", {}, "👀 Look for: "), s.cue) : null,
+      s.timer_min > 0 ? h("button", {class:"tbtn", onclick:e => { e.stopPropagation(); startTimer(c.name + ": step " + (si + 1), s.timer_min); }},
+        "⏱ Start " + (s.timer_min >= 60 && s.timer_min % 60 === 0 ? s.timer_min / 60 + " hr" : s.timer_min + " min") + " timer") : null)));
+
+  const node = h("div", {class:"guide"},
+    h("section", {class:"g-top"},
+      h("span", {class:"part-n"}, isFinish ? "Final stage" : "Part " + (idx + 1) + " of " + r.components.length),
+      h("h1", {}, c.name),
+      c.purpose ? h("p", {}, c.purpose) : null),
+    facts.length ? h("div", {class:"facts"}, facts.map(([e, k, v]) => h("div", {class:"fact"}, h("small", {}, e + " " + k), h("b", {}, v)))) : null,
+
+    c.requires.length ? h("div", {class:"callout req-c"}, h("b", {}, "⏮ Do this first"),
+      h("p", {}, "Have ", c.requires.map((n, i) => {
+        const ti = stages.findIndex(x => x.name.toLowerCase() === String(n).toLowerCase());
+        const el = ti >= 0 ? h("button", {class:"inlink", onclick:() => showComponent(r, list, ti)}, n) : h("b", {}, n);
+        return i ? [i === c.requires.length - 1 ? " and " : ", ", el] : el;
+      }), " ready before you start this part.")) : null,
+    hasVal(c.parallel) ? h("div", {class:"callout par-c"}, h("b", {}, "⚡ Save time"), h("p", {}, c.parallel)) : null,
+    c.sub_notes.length ? h("div", {class:"callout sub-c"}, h("b", {}, "🔄 Because of your swaps"), h("ul", {}, c.sub_notes.map(n => h("li", {}, n)))) : null,
+
+    c.ingredients.length ? h("section", {class:"g-sec"},
+      h("h2", {}, "You'll need"),
+      h("ul", {class:"checklist"}, c.ingredients.map(i => h("li", {}, h("label", {}, h("input", {type:"checkbox"}),
+        h("span", {}, i.item, i.changed ? h("span", {class:"badge"}, "SWAP") : null)))))) : null,
+
+    h("section", {class:"g-sec"},
+      h("div", {class:"sec-h"}, h("h2", {}, "Step by step"), h("span", {class:"hint", style:"margin:0"}, nDone + " of " + c.steps.length + " done")),
+      h("div", {class:"progress small"}, h("i", {style:"width:" + (c.steps.length ? nDone / c.steps.length * 100 : 0) + "%"})),
+      h("p", {class:"hint"}, "Tap a step when you've finished it."),
+      h("ol", {class:"steps"}, stepEls),
+      c.steps.length && nDone === c.steps.length ? h("div", {class:"callout done-c"}, h("b", {}, "🎉 " + c.name + " done!"), h("p", {}, next ? "Next up: " + next.name + "." : "Time to eat — enjoy!")) : null),
+
+    c.tips.length ? h("section", {class:"g-sec"}, h("div", {class:"tipsbox"}, h("h3", {}, "💡 Tips & notes"), h("ul", {}, c.tips.map(t => h("li", {}, t))))) : null,
+
+    h("nav", {class:"gnav"},
+      prev ? h("button", {class:"btn soft", onclick:() => showComponent(r, list, idx - 1)}, h("small", {}, "← Previous"), h("span", {}, prev.name)) : h("span"),
+      next ? h("button", {class:"btn mustard", onclick:() => showComponent(r, list, idx + 1)}, h("small", {}, "Next →"), h("span", {}, next.name))
+           : h("button", {class:"btn mustard", onclick:toOverview}, h("small", {}, "All parts"), h("span", {}, "Back to overview")))
+  );
+  if (keepScroll) { const y = scrollY; $("app").replaceChildren(node); scrollTo(0, y); }
+  else mount(node);
+}
+
+/* ================= start ================= */
+renderTabbar();
+go("home");
+</script>
+</body>
+</html>
