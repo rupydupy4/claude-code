@@ -1,0 +1,5 @@
+node_modules/
+dist/
+dist-claude/
+e2e/screenshots/
+*.tsbuildinfo

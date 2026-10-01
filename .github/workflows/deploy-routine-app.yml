@@ -3,7 +3,7 @@ name: Deploy apps to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['routine-reminder-app/**', 'safe-plate/**', 'breakfree/**', '.github/workflows/deploy-routine-app.yml']
+    paths: ['routine-reminder-app/**', 'safe-plate/**', 'breakfree/**', 'jarvis/**', '.github/workflows/deploy-routine-app.yml']
   workflow_dispatch:
 
 permissions:
@@ -27,7 +27,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: breakfree/package-lock.json
+          cache-dependency-path: |
+            breakfree/package-lock.json
+            jarvis/package-lock.json
       # BREAKFREE must type-check, pass its tests and build before anything is published.
       - name: Test and build BREAKFREE
         working-directory: breakfree
@@ -36,8 +38,16 @@ jobs:
           npm run typecheck
           npm test
           npm run build
+      # J.A.R.V.I.S likewise: type-check, unit tests, then the standalone build.
+      - name: Test and build J.A.R.V.I.S
+        working-directory: jarvis
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
       - uses: actions/configure-pages@v5
-      # Routine stays at the site root; Safe Plate at /safe-plate/; BREAKFREE at /breakfree/.
+      # Routine stays at the site root; Safe Plate at /safe-plate/; BREAKFREE at /breakfree/; J.A.R.V.I.S at /jarvis/.
       - name: Assemble site
         run: |
           mkdir -p _site
@@ -46,6 +56,8 @@ jobs:
           cp -r safe-plate/. _site/safe-plate/
           mkdir -p _site/breakfree
           cp -r breakfree/dist/. _site/breakfree/
+          mkdir -p _site/jarvis
+          cp -r jarvis/dist/. _site/jarvis/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
