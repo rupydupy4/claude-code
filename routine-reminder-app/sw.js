@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'routine-reminders-v3';
+const CACHE = 'routine-reminders-v4';
 const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -18,8 +18,8 @@ self.addEventListener('activate', (event) => {
 // Network first so updates show up, cache as offline fallback.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  // Other apps on this site (e.g. /safe-plate/) handle their own requests.
-  if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/safe-plate/')) return;
+  // Other apps on this site (/safe-plate/, /breakfree/) handle their own requests.
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || /\/(safe-plate|breakfree)\//.test(url.pathname)) return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {

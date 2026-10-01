@@ -3,7 +3,7 @@ name: Deploy apps to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['routine-reminder-app/**', 'safe-plate/**', '.github/workflows/deploy-routine-app.yml']
+    paths: ['routine-reminder-app/**', 'safe-plate/**', 'breakfree/**', '.github/workflows/deploy-routine-app.yml']
   workflow_dispatch:
 
 permissions:
@@ -23,14 +23,29 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: breakfree/package-lock.json
+      # BREAKFREE must type-check, pass its tests and build before anything is published.
+      - name: Test and build BREAKFREE
+        working-directory: breakfree
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
       - uses: actions/configure-pages@v5
-      # Routine stays at the site root; Safe Plate lives at /safe-plate/.
+      # Routine stays at the site root; Safe Plate at /safe-plate/; BREAKFREE at /breakfree/.
       - name: Assemble site
         run: |
           mkdir -p _site
           cp -r routine-reminder-app/. _site/
           mkdir -p _site/safe-plate
           cp -r safe-plate/. _site/safe-plate/
+          mkdir -p _site/breakfree
+          cp -r breakfree/dist/. _site/breakfree/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
