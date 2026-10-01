@@ -943,7 +943,8 @@ function showComponent(r, list, idx, keepScroll){
 /* ================= start ================= */
 renderTabbar();
 go("home");
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// Offline support only for the standalone website; inside Claude the page is hosted for you.
+if ("serviceWorker" in navigator && !window.claude) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
 </html>
