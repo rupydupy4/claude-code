@@ -213,3 +213,15 @@ describe('storage', () => {
     expect(getState().conversations).toHaveLength(0);
   });
 });
+
+describe('British male voice selection', () => {
+  const v = (name: string, lang = 'en-GB') => ({ name, lang, voiceURI: name });
+  it('prefers the best installed British male voice', async () => {
+    const { pickBritishMale } = await import('../voice/VoiceService');
+    expect(pickBritishMale([v('Samantha', 'en-US'), v('Kate'), v('Daniel'), v('Arthur')])?.name).toBe('Arthur');
+    expect(pickBritishMale([v('Daniel'), v('Daniel (Enhanced)')])?.name).toBe('Daniel (Enhanced)');
+    expect(pickBritishMale([v('Google UK English Female'), v('Google UK English Male')])?.name).toBe('Google UK English Male');
+    expect(pickBritishMale([v('Serena'), v('Kate')])).toBeUndefined();
+    expect(pickBritishMale([v('Alex', 'en-US')])).toBeUndefined();
+  });
+});

@@ -56,3 +56,6 @@ export const getSample = () => use<SampleFn>('sample');
 export const getDb = () => use<ClaudeDb>('db');
 export const getUser = () => use<UserNs>('user');
 export const getDownloads = () => use<DownloadsNs>('downloads');
+
+/** The published claude.ai version of JARVIS (the one with the AI), linked from the standalone site. */
+export const AI_VERSION_URL = 'https://claude.ai/artifact/AJQfn7JHq8cGYzowJjuTtM';
