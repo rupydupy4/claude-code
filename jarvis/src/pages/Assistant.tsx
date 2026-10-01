@@ -4,6 +4,7 @@ import type { Conversation, Message } from '../domain/types';
 import { deleteConversation, getState, loadMessages, upsert, useStore } from '../data/store';
 import { resolvePending, sendMessage, useAIStatus } from '../ai/assistant';
 import { webSearchConfigured } from '../services/research';
+import { AI_VERSION_URL } from '../platform/claude';
 import { SpeechStreamer } from '../voice/VoiceService';
 import { Icon } from '../components/Icon';
 import { Markdown } from '../components/Markdown';
@@ -263,6 +264,9 @@ export default function Assistant() {
                   ? 'Ask anything, or tell me what to do. I can manage your tasks, projects, notes, reminders and calendar, and work with your documents.'
                   : 'Give me a direct command and I’ll carry it out. Open JARVIS through claude.ai for free-form questions, writing help and document analysis.'}
               </p>
+              {ai.mode !== 'claude' && (
+                <a className="btn" href={AI_VERSION_URL} target="_blank" rel="noopener noreferrer"><Icon name="sparkles" size={16} />Open the AI version</a>
+              )}
               <div className="suggestions">
                 {SUGGESTIONS.map((q) => <button key={q} type="button" className="chip" onClick={() => void send(q)}>{q}</button>)}
               </div>

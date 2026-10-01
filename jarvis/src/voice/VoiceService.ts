@@ -47,6 +47,23 @@ export const VOICE_ERROR_COPY: Record<VoiceErrorCode, string> = {
   other: 'Voice input stopped unexpectedly. Try again.',
 };
 
+/**
+ * Default voice: a British English male voice, chosen from the voices this device has installed
+ * (browsers can't download voices or clone a particular person's voice). Ordered by quality.
+ */
+const BRITISH_MALE = ['Arthur', 'Daniel', 'Oliver', 'Google UK English Male', 'Microsoft Ryan', 'Microsoft George', 'Microsoft Thomas', 'Microsoft Alfie', 'Malcolm', 'Fergus'];
+const FEMALE_HINT = /\b(female|kate|serena|stephanie|martha|hazel|susan|libby|sonia|maisie|bella|abbi|hollie|olivia|fiona|moira|karen|samantha)\b/i;
+
+export function pickBritishMale<T extends { name: string; lang: string; voiceURI: string }>(voices: T[]): T | undefined {
+  const gb = voices.filter((v) => /^en[-_]GB/i.test(v.lang));
+  for (const n of BRITISH_MALE) {
+    // Prefer enhanced/premium editions of a named voice when installed.
+    const named = gb.filter((v) => v.name.toLowerCase().startsWith(n.toLowerCase()) || v.name.toLowerCase().includes(n.toLowerCase()));
+    if (named.length) return named.find((v) => /premium|enhanced|neural|online/i.test(v.name)) ?? named[0];
+  }
+  return gb.find((v) => /\bmale\b/i.test(v.name)) ?? gb.find((v) => !FEMALE_HINT.test(v.name));
+}
+
 /** Removes Markdown and symbols that sound wrong when read aloud. */
 export function toSpeakable(text: string): string {
   return text
@@ -199,8 +216,12 @@ export class WebSpeechVoice implements VoiceService {
   private utter(text: string, opts: SpeakOptions) {
     const u = new SpeechSynthesisUtterance(text);
     u.rate = Math.min(2, Math.max(0.5, opts.rate ?? 1));
-    const v = opts.voiceURI ? this.voices().find((x) => x.voiceURI === opts.voiceURI) : undefined;
-    if (v) u.voice = v;
+    const all = this.voices();
+    const v = (opts.voiceURI ? all.find((x) => x.voiceURI === opts.voiceURI) : undefined) ?? pickBritishMale(all);
+    if (v) {
+      u.voice = v;
+      u.lang = v.lang;
+    } else u.lang = 'en-GB';
     return u;
   }
 

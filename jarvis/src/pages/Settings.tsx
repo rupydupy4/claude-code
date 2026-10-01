@@ -5,7 +5,8 @@ import { loadDemoData } from '../data/demo';
 import { useAIStatus } from '../ai/assistant';
 import { webSearchConfigured } from '../services/research';
 import { requestNotificationPermission } from '../services/reminders';
-import { getDownloads } from '../platform/claude';
+import { AI_VERSION_URL, getDownloads } from '../platform/claude';
+import { pickBritishMale } from '../voice/VoiceService';
 import { voice } from '../app/session';
 import { Icon } from '../components/Icon';
 import { confirmAction, Field, PageHeader, Segmented, SettingRow, Toggle } from '../components/ui';
@@ -78,6 +79,7 @@ export default function Settings() {
     void v.textToSpeech(`Good ${new Date().getHours() < 12 ? 'morning' : 'day'}${s.address ? `, ${s.address}` : ''}. This is how I sound.`, { rate: s.voice.rate, voiceURI: s.voice.voiceURI });
   };
 
+  const autoVoice = pickBritishMale(voices);
   const englishFirst = [...voices].sort((a, b) => Number(b.lang.startsWith('en')) - Number(a.lang.startsWith('en')) || a.name.localeCompare(b.name));
 
   return (
@@ -114,12 +116,17 @@ export default function Settings() {
             <Field label="Voice">
               {(id) => (
                 <select id={id} value={s.voice.voiceURI} onChange={(e) => set({ voice: { ...s.voice, voiceURI: e.target.value } })}>
-                  <option value="">Default</option>
+                  <option value="">British male (automatic){autoVoice ? ` · ${autoVoice.name}` : ''}</option>
                   {englishFirst.map((x) => <option key={x.voiceURI} value={x.voiceURI}>{x.name} ({x.lang})</option>)}
                 </select>
               )}
             </Field>
             <button type="button" className="btn" style={{ justifySelf: 'start' }} onClick={testVoice}><Icon name="speak" size={16} />Test voice</button>
+            {!s.voice.voiceURI && !autoVoice && voices.length > 0 && (
+              <p className="small muted" style={{ gridColumn: '1 / -1' }}>
+                No British male voice is installed on this device, so the default voice is used. On iPhone: Settings → Accessibility → Spoken Content → Voices → English → United Kingdom, then download Arthur or Daniel (Enhanced).
+              </p>
+            )}
           </div>
         ) : <p className="small muted">This browser can’t speak replies.</p>}
       </Section>
@@ -137,7 +144,8 @@ export default function Settings() {
           <div>
             {ai.mode === 'claude'
               ? `AI is on${ai.tools ? ', with access to your workspace tools' : ''}. Live web search is ${webSearchConfigured() ? 'configured' : 'not configured, so research answers come from general knowledge and say so'}.`
-              : 'Command mode: the assistant understands direct commands (tasks, reminders, notes, events, projects, schedule, planning, search). Free-form AI is available when you open JARVIS through claude.ai.'}
+              : 'Command mode: the assistant understands direct commands (tasks, reminders, notes, events, projects, schedule, planning, search). Free-form AI is available in the claude.ai version.'}
+            {ai.mode !== 'claude' && <> <a href={AI_VERSION_URL} target="_blank" rel="noopener noreferrer">Open the AI version</a></>}
           </div>
         </div>
       </Section>
