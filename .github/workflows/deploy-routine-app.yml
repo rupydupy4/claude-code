@@ -3,7 +3,7 @@ name: Deploy apps to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['routine-reminder-app/**', 'safe-plate/**', 'breakfree/**', 'jarvis/**', '.github/workflows/deploy-routine-app.yml']
+    paths: ['routine-reminder-app/**', 'safe-plate/**', 'breakfree/**', 'jarvis/**', 'family-chores-phone/**', '.github/workflows/deploy-routine-app.yml']
   workflow_dispatch:
 
 permissions:
@@ -30,6 +30,7 @@ jobs:
           cache-dependency-path: |
             breakfree/package-lock.json
             jarvis/package-lock.json
+            family-chores-phone/package-lock.json
       # BREAKFREE must type-check, pass its tests and build before anything is published.
       - name: Test and build BREAKFREE
         working-directory: breakfree
@@ -46,8 +47,16 @@ jobs:
           npm run typecheck
           npm test
           npm run build
+      # Family Chores (device version) likewise.
+      - name: Test and build Family Chores
+        working-directory: family-chores-phone
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
       - uses: actions/configure-pages@v5
-      # Routine stays at the site root; Safe Plate at /safe-plate/; BREAKFREE at /breakfree/; J.A.R.V.I.S at /jarvis/.
+      # Routine stays at the site root; Safe Plate at /safe-plate/; BREAKFREE at /breakfree/; J.A.R.V.I.S at /jarvis/; Family Chores at /family-chores/.
       - name: Assemble site
         run: |
           mkdir -p _site
@@ -58,6 +67,8 @@ jobs:
           cp -r breakfree/dist/. _site/breakfree/
           mkdir -p _site/jarvis
           cp -r jarvis/dist/. _site/jarvis/
+          mkdir -p _site/family-chores
+          cp -r family-chores-phone/dist/. _site/family-chores/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
