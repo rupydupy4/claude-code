@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ArrowLeft } from 'lucide-react';
 import { requireRole } from '@/lib/session';
-import { getChore, photoUrl } from '@/lib/data';
+import { getChore, isOverdue, photoUrl } from '@/lib/data';
+import { describeRepeat } from '@/lib/recurrence';
 import { formatDateTime, formatDue, formatReward, todayIn } from '@/lib/format';
 import { HandInForm } from '@/components/HandInForm';
 import { Card, Notice, StatusBadge } from '@/components/ui';
@@ -18,6 +19,7 @@ export default async function ChildChore(props: PageProps<'/child/chores/[id]'>)
   const today = todayIn(household.time_zone);
   const photo = await photoUrl(supabase, chore.photo_path);
   const canHandIn = chore.status === 'assigned' || chore.status === 'needs_changes';
+  const repeat = describeRepeat(chore.repeat, chore.repeat_days);
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
@@ -28,7 +30,9 @@ export default async function ChildChore(props: PageProps<'/child/chores/[id]'>)
         <h1 className="mt-2 text-2xl font-semibold">{chore.title}</h1>
         <div className="mt-2 flex flex-wrap gap-x-4 text-sm text-ink-2">
           <span>Reward: <strong className="font-semibold text-ink">{formatReward(chore)}</strong></span>
-          {chore.due_date && <span>{formatDue(chore.due_date, today)}</span>}
+          {chore.points > 0 && <span>Points: <strong className="font-semibold text-ink">{chore.points}</strong></span>}
+          {chore.due_date && <span className={isOverdue(chore, today) ? 'font-semibold text-danger' : undefined}>{formatDue(chore.due_date, today)}</span>}
+          {repeat && <span>{repeat}</span>}
         </div>
         {chore.description && (
           <div className="mt-5 border-t border-line pt-5">
@@ -48,7 +52,7 @@ export default async function ChildChore(props: PageProps<'/child/chores/[id]'>)
       )}
 
       {chore.status === 'submitted' && <Notice tone="warn">Waiting for approval. Handed in {formatDateTime(chore.submitted_at!, household.time_zone)}.</Notice>}
-      {chore.status === 'approved' && <Notice tone="ok">Approved{chore.approved_at ? ` ${formatDateTime(chore.approved_at, household.time_zone)}` : ''}. {formatReward(chore)} added to your rewards.{chore.feedback ? ` “${chore.feedback}”` : ''}</Notice>}
+      {chore.status === 'approved' && <Notice tone="ok">Approved{chore.approved_at ? ` ${formatDateTime(chore.approved_at, household.time_zone)}` : ''}. {formatReward(chore)}{chore.points ? ` and ${chore.points} points` : ''} added to your rewards.{chore.feedback ? ` “${chore.feedback}”` : ''}</Notice>}
 
       {!canHandIn && (chore.child_note || photo) && (
         <Card className="p-5">

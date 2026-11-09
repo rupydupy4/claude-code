@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/session';
 import { byDue, listChildren, listChores } from '@/lib/data';
 import { todayIn } from '@/lib/format';
 import { ChoreList, ChoreRow } from '@/components/ChoreRow';
+import { DueGroups } from '@/components/DueGroups';
 import { ButtonLink, EmptyState, Notice, PageHeader, cx } from '@/components/ui';
 
 export const metadata: Metadata = { title: 'Chores' };
@@ -40,7 +41,7 @@ export default async function ChoresPage(props: PageProps<'/parent/chores'>) {
         {sp.created && <Notice tone="ok">Chore created and assigned.</Notice>}
         {sp.deleted && <Notice tone="ok">Chore deleted.</Notice>}
 
-        <nav aria-label="Chore status" className="flex gap-1 overflow-x-auto rounded-xl bg-black/[0.04] p-1">
+        <nav aria-label="Chore status" className="flex gap-1 overflow-x-auto rounded-xl bg-ink/[0.05] p-1">
           {TABS.map((t) => (
             <Link key={t.id} href={link(t.id)} aria-current={tab === t.id ? 'page' : undefined}
               className={cx('flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-center text-sm font-semibold', tab === t.id ? 'bg-card text-ink shadow-sm' : 'text-ink-2 hover:text-ink')}>
@@ -50,7 +51,7 @@ export default async function ChoresPage(props: PageProps<'/parent/chores'>) {
         </nav>
 
         {kids.length > 1 && (
-          <div className="flex flex-wrap gap-2" aria-label="Filter by child">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by child">
             <Link href={link(tab, '')} aria-current={!child ? 'true' : undefined} className={cx('rounded-full border px-3 py-1 text-sm font-medium', !child ? 'border-accent bg-accent-soft text-accent-strong' : 'border-line-strong text-ink-2')}>Everyone</Link>
             {kids.map((k) => (
               <Link key={k.id} href={link(tab, k.id)} aria-current={child === k.id ? 'true' : undefined} className={cx('rounded-full border px-3 py-1 text-sm font-medium', child === k.id ? 'border-accent bg-accent-soft text-accent-strong' : 'border-line-strong text-ink-2')}>{k.name}</Link>
@@ -58,13 +59,22 @@ export default async function ChoresPage(props: PageProps<'/parent/chores'>) {
           </div>
         )}
 
-        {list.length ? (
+        {list.length && tab === 'active' ? (
+          <div className="space-y-6 pt-2">
+            <DueGroups chores={list} today={today} render={(group) => (
+              <ChoreList>
+                {group.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assigned_to)} today={today} href={`/parent/chores/${c.id}`} />)}
+              </ChoreList>
+            )} />
+          </div>
+        ) : list.length ? (
           <ChoreList>
-            {list.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assigned_to)} today={today} href={`/parent/chores/${c.id}`} showStatus={tab === 'active'} />)}
+            {list.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assigned_to)} today={today} href={`/parent/chores/${c.id}`} showStatus={false} />)}
           </ChoreList>
         ) : (
-          <EmptyState title={tab === 'review' ? 'Nothing waiting for approval' : tab === 'approved' ? 'No approved chores yet' : 'No chores to do'}>
-            {tab === 'active' && (kids.length ? 'Create a chore and assign it to a child.' : 'Add a child first, then create chores for them.')}
+          <EmptyState title={tab === 'review' ? 'Nothing waiting for approval' : tab === 'approved' ? 'No approved chores yet' : 'No chores to do'}
+            action={tab === 'active' ? <ButtonLink href={kids.length ? '/parent/chores/new' : '/parent/children#add'} size="sm">{kids.length ? 'Create a chore' : 'Add a child'}</ButtonLink> : undefined}>
+            {tab === 'active' ? (kids.length ? 'Create a chore and assign it to a child.' : 'Add a child first, then create chores for them.') : tab === 'review' ? 'Chores your children hand in will appear here.' : 'Approved chores and their rewards will appear here.'}
           </EmptyState>
         )}
       </div>

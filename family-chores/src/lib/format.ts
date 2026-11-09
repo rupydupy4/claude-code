@@ -1,3 +1,4 @@
+import { addDays, dayIn } from './dates';
 import type { Chore, ChoreStatus, RewardType } from './types';
 
 export const STATUS_LABEL: Record<ChoreStatus, string> = {
@@ -30,26 +31,22 @@ export const REWARD_TYPE_LABEL: Record<RewardType, string> = { money: 'Money', s
 
 /** Today's date (YYYY-MM-DD) in the household's time zone. */
 export function todayIn(timeZone: string, now = new Date()) {
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-  } catch {
-    return now.toISOString().slice(0, 10);
-  }
+  return dayIn(timeZone, now);
 }
 
-function addDays(day: string, n: number) {
-  const d = new Date(`${day}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
+export function formatDay(day: string) {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
-/** "Today", "Tomorrow", "Overdue · Mon 3 Oct" etc., relative to the household's today. */
+/** "Due today", "Due tomorrow", "Overdue · Mon 3 Oct" etc., relative to the household's today. */
 export function formatDue(due: string, today: string) {
   if (due === today) return 'Due today';
   if (due === addDays(today, 1)) return 'Due tomorrow';
-  const label = new Date(`${due}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  return due < today ? `Overdue · ${label}` : `Due ${label}`;
+  if (due === addDays(today, -1)) return 'Overdue · yesterday';
+  return due < today ? `Overdue · ${formatDay(due)}` : `Due ${formatDay(due)}`;
 }
+
+export const formatPoints = (n: number) => `${n} ${n === 1 ? 'point' : 'points'}`;
 
 export function formatDate(iso: string, timeZone: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone });
@@ -82,7 +79,7 @@ export function totalRewards(chores: Chore[]): RewardTotals {
 /** Friendly copy for database errors raised by the chore functions. */
 export function errorMessage(e: { message?: string; code?: string } | null | undefined, fallback = 'Something went wrong. Please try again.') {
   if (!e?.message) return fallback;
-  const known = ['Only a parent', 'Chore not found', 'already', 'Choose a child', 'can\'t be edited', 'isn\'t waiting', 'Say what needs', 'Invalid photo', 'Child not found', 'Not signed in'];
+  const known = ['Only a parent', 'Chore not found', 'already', 'Choose a child', 'can\'t be edited', 'isn\'t waiting', 'Say what needs', 'Invalid photo', 'Child not found', 'Not signed in', 'Choose at least one day', 'Nothing to pay out'];
   if (known.some((k) => e.message!.includes(k))) return e.message;
   if (e.code === '23505' || e.message.includes('members_child_name_unique')) return 'A child with that name already exists in your household.';
   if (e.code === '23514') return 'Please check the details and try again.';

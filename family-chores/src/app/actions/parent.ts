@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/session';
 import { createAdminClient, childEmail } from '@/lib/supabase/admin';
 import { errorMessage } from '@/lib/format';
-import { AVATAR_COLORS, type RewardType } from '@/lib/types';
+import { cleanDays } from '@/lib/recurrence';
+import { AVATAR_COLORS, type Repeat, type RewardType } from '@/lib/types';
 import type { FormState } from './auth';
 
 function keep(form: FormData, error: string): FormState {
@@ -46,6 +47,15 @@ function parseReward(form: FormData): { type: RewardType; amount: number | null;
   return 'Choose a reward type.';
 }
 
+function parseRepeat(form: FormData): { repeat: Repeat; days: number[] } | string {
+  const repeat = (str(form, 'repeat') || 'none') as Repeat;
+  if (!['none', 'daily', 'weekly'].includes(repeat)) return 'Choose how often the chore repeats.';
+  if (repeat !== 'weekly') return { repeat, days: [] };
+  const days = cleanDays(form.getAll('repeat_days').map((d) => Number(d)));
+  if (!days.length) return 'Choose at least one day for a weekly chore.';
+  return { repeat, days };
+}
+
 export async function saveChore(_: FormState, form: FormData): Promise<FormState> {
   const { supabase } = await parentSession();
   const id = str(form, 'id');
@@ -59,10 +69,16 @@ export async function saveChore(_: FormState, form: FormData): Promise<FormState
   if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) return keep(form, 'That due date isn’t valid.');
   const reward = parseReward(form);
   if (typeof reward === 'string') return keep(form, reward);
+  const repeat = parseRepeat(form);
+  if (typeof repeat === 'string') return keep(form, repeat);
+  const pointsRaw = str(form, 'points') || '10';
+  const points = Number(pointsRaw);
+  if (!/^\d{1,4}$/.test(pointsRaw) || points > 1000) return keep(form, 'Points must be a whole number from 0 to 1000.');
 
   const args = {
     p_title: title, p_description: description, p_assigned_to: assignedTo,
     p_reward_type: reward.type, p_reward_amount: reward.amount, p_reward_note: reward.note, p_due_date: due || null,
+    p_repeat: repeat.repeat, p_repeat_days: repeat.days, p_points: points,
   };
   let choreId = id;
   if (id) {
@@ -96,12 +112,36 @@ export async function reviewChore(_: FormState, form: FormData): Promise<FormSta
   if (!isUuid(id)) return { error: 'Chore not found.' };
   if (!approve && !feedback) return { error: 'Say what needs changing so they know what to do.' };
   if (feedback.length > 300) return { error: 'Keep the note under 300 characters.' };
+  const { data: before } = await supabase.from('chores').select('repeat').eq('id', id).maybeSingle();
   const { error } = await supabase.rpc('review_chore', { p_chore_id: id, p_approve: approve, p_feedback: feedback || null });
   if (error) return { error: errorMessage(error) };
   revalidatePath('/parent', 'layout');
+  revalidatePath('/child', 'layout');
+  // "approved-repeat": the database has scheduled the next one.
+  const outcome = approve ? (before && before.repeat !== 'none' ? 'approved-repeat' : 'approved') : 'changes';
   // Move straight on to the next submission, if there is one.
   const { data: next } = await supabase.from('chores').select('id').eq('status', 'submitted').order('submitted_at').limit(1).maybeSingle();
-  redirect(next ? `/parent/chores/${next.id}?reviewed=${approve ? 'approved' : 'changes'}` : `/parent?reviewed=${approve ? 'approved' : 'changes'}`);
+  redirect(next ? `/parent/chores/${next.id}?reviewed=${outcome}` : `/parent?reviewed=${outcome}`);
+}
+
+/**
+ * Records that a child's owed rewards of one type were handed over (or one custom reward, with
+ * chore_id). The database function checks the caller is a parent of that child's household.
+ */
+export async function markRewardsPaid(form: FormData) {
+  const { supabase } = await parentSession();
+  const childId = str(form, 'child_id');
+  const type = str(form, 'reward_type') as RewardType;
+  const choreId = str(form, 'chore_id');
+  const back = str(form, 'return_to');
+  const returnTo = /^\/parent(\/rewards)?$/.test(back) ? back : '/parent';
+  if (!isUuid(childId) || !['money', 'screen_time', 'custom'].includes(type) || (choreId && !isUuid(choreId))) {
+    redirect(`${returnTo}?paid=error`);
+  }
+  const { error } = await supabase.rpc('mark_rewards_paid', { p_child_id: childId, p_reward_type: type, p_chore_id: choreId || null });
+  revalidatePath('/parent', 'layout');
+  revalidatePath('/child', 'layout');
+  redirect(`${returnTo}?paid=${error ? 'error' : 'ok'}`);
 }
 
 // ---------------------------------------------------------------- children

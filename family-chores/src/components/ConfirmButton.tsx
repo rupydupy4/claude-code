@@ -14,7 +14,7 @@ export function ConfirmButton({ action, fields, label, confirmText, confirmLabel
       {Object.entries(fields).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <span className="mr-auto text-sm font-medium text-danger">{confirmText}</span>
       <button type="button" className={buttonClass('secondary', 'sm')} onClick={() => setAsking(false)}>Cancel</button>
-      <SubmitButton variant="danger" size="sm" pendingText="Working…" className="!bg-danger !text-white">{confirmLabel}</SubmitButton>
+      <SubmitButton variant="danger" size="sm" pendingText="Working…" className="!bg-danger !text-canvas">{confirmLabel}</SubmitButton>
     </form>
   );
 }

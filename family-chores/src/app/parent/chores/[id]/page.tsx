@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import { requireRole } from '@/lib/session';
-import { getChore, photoUrl } from '@/lib/data';
-import { formatDateTime, formatDue, formatReward, todayIn } from '@/lib/format';
+import { getChore, isOverdue, photoUrl } from '@/lib/data';
+import { formatDateTime, formatDay, formatDue, formatReward, todayIn } from '@/lib/format';
+import { describeRepeat, nextAfterApproval } from '@/lib/recurrence';
 import { deleteChore } from '@/app/actions/parent';
 import { ReviewForm } from '@/components/ReviewForm';
 import { ConfirmButton } from '@/components/ConfirmButton';
-import { Avatar, ButtonLink, Card, Notice, StatusBadge } from '@/components/ui';
+import { Avatar, ButtonLink, Card, Notice, StatusBadge, cx } from '@/components/ui';
 import type { Member } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Chore' };
@@ -23,13 +24,14 @@ export default async function ChoreDetail(props: PageProps<'/parent/chores/[id]'
   const photo = await photoUrl(supabase, chore.photo_path);
   const today = todayIn(household.time_zone);
   const tz = household.time_zone;
+  const repeat = describeRepeat(chore.repeat, chore.repeat_days);
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <Link href="/parent/chores" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-2 hover:text-ink"><ArrowLeft size={16} aria-hidden="true" />Chores</Link>
 
       {sp.saved && <Notice tone="ok">Changes saved.</Notice>}
-      {sp.reviewed && <Notice tone="ok">{sp.reviewed === 'approved' ? 'Approved. Here’s the next one waiting.' : 'Sent back. Here’s the next one waiting.'}</Notice>}
+      {sp.reviewed && <Notice tone="ok">{sp.reviewed === 'changes' ? 'Sent back.' : sp.reviewed === 'approved-repeat' ? 'Approved, and the next one is scheduled.' : 'Approved.'} Here’s the next one waiting.</Notice>}
 
       <Card className="p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -51,9 +53,26 @@ export default async function ChoreDetail(props: PageProps<'/parent/chores/[id]'
           </div>
           <div>
             <dt className="text-ink-3">Due</dt>
-            <dd className="mt-1 font-medium">{chore.due_date ? formatDue(chore.due_date, today).replace(/^Due (\w)/, (_, c: string) => c.toUpperCase()) : 'No due date'}</dd>
+            <dd className={cx('mt-1 font-medium', isOverdue(chore, today) && 'text-danger')}>{chore.due_date ? formatDue(chore.due_date, today).replace(/^Due (\w)/, (_, c: string) => c.toUpperCase()) : 'No due date'}</dd>
           </div>
+          <div>
+            <dt className="text-ink-3">Points</dt>
+            <dd className="mt-1 font-medium">{chore.points}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-3">Repeats</dt>
+            <dd className="mt-1 font-medium">{repeat ?? 'No'}</dd>
+          </div>
+          {chore.status === 'approved' && (
+            <div>
+              <dt className="text-ink-3">Paid out</dt>
+              <dd className="mt-1 font-medium">{chore.paid_at ? formatDateTime(chore.paid_at, tz) : 'Not yet'}</dd>
+            </div>
+          )}
         </dl>
+        {repeat && chore.status !== 'approved' && (
+          <p className="mt-4 text-sm text-ink-3">When you approve it, the next one will be due {formatDay(nextAfterApproval(chore, today)!)}.</p>
+        )}
 
         {chore.description && (
           <div className="mt-5 border-t border-line pt-5">
@@ -67,10 +86,10 @@ export default async function ChoreDetail(props: PageProps<'/parent/chores/[id]'
         <Card className="p-5 sm:p-6">
           <h2 className="font-semibold">{chore.status === 'submitted' ? `${child?.name} says it’s done` : 'Submission'}</h2>
           {chore.submitted_at && <p className="mt-0.5 text-sm text-ink-3">Handed in {formatDateTime(chore.submitted_at, tz)}</p>}
-          {chore.child_note && <p className="mt-3 rounded-xl bg-black/[0.03] px-4 py-3">“{chore.child_note}”</p>}
+          {chore.child_note && <p className="mt-3 rounded-xl bg-ink/[0.04] px-4 py-3">“{chore.child_note}”</p>}
           {photo ? (
             <a href={photo} target="_blank" rel="noreferrer" className="mt-4 block overflow-hidden rounded-xl border border-line">
-              <img src={photo} alt={`Photo proof for ${chore.title}`} className="max-h-[480px] w-full object-contain bg-black/[0.03]" />
+              <img src={photo} alt={`Photo proof for ${chore.title}`} className="max-h-[480px] w-full object-contain bg-ink/[0.03]" />
             </a>
           ) : (
             <p className="mt-3 text-sm text-ink-3">No photo was added.</p>

@@ -86,12 +86,12 @@ export function HandInForm({ choreId, householdId, resubmit }: { choreId: string
       <div>
         <span className={labelClass}>Photo <span className="font-normal text-ink-3">(optional)</span></span>
         {preview ? (
-          <div className="relative overflow-hidden rounded-xl border border-line bg-black/[0.03]">
+          <div className="relative overflow-hidden rounded-xl border border-line bg-ink/[0.03]">
             <img src={preview} alt="Your photo" className="max-h-80 w-full object-contain" />
-            <button type="button" onClick={clear} aria-label="Remove photo" className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 shadow"><X size={18} /></button>
+            <button type="button" onClick={clear} aria-label="Remove photo" className="absolute right-2 top-2 rounded-full bg-card/90 p-2 text-ink shadow"><X size={18} aria-hidden="true" /></button>
           </div>
         ) : (
-          <button type="button" onClick={() => input.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-white py-6 font-medium text-ink-2 hover:border-ink-3">
+          <button type="button" onClick={() => input.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-field py-6 font-medium text-ink-2 hover:border-ink-3">
             <Camera size={20} aria-hidden="true" />Add a photo
           </button>
         )}

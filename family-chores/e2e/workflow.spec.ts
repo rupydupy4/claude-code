@@ -67,6 +67,11 @@ test('full workflow: parent and child', async ({ browser }) => {
   await parent.getByLabel('Amount (€)').fill('3');
   const today = await parent.evaluate(() => new Intl.DateTimeFormat('en-CA').format(new Date()));
   await parent.getByLabel(/Due date/).fill(today);
+  // It repeats daily and is worth 15 points.
+  await parent.getByRole('button', { name: 'Daily' }).click();
+  await expect(parent.getByRole('button', { name: 'Daily' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(parent.getByText(/Every day\. When you approve one, the next is created automatically/)).toBeVisible();
+  await parent.getByLabel('Points').fill('15');
   await noHorizontalScroll(parent);
   await parent.screenshot({ path: 'e2e/screenshots/02-create-chore.png', fullPage: true });
   await parent.getByRole('button', { name: 'Create chore' }).click();
@@ -87,6 +92,9 @@ test('full workflow: parent and child', async ({ browser }) => {
   // 6. Child sees the chore
   await expect(child.getByRole('heading', { name: `Hi ${childName}` })).toBeVisible();
   await expect(child.getByText('You have 1 chore for today.')).toBeVisible();
+  await expect(child.getByRole('heading', { name: /^Today/ })).toBeVisible();
+  await expect(child.getByText('Every day').first()).toBeVisible();
+  await expect(child.getByRole('region', { name: /Level 1/ })).toContainText('Get a chore approved to start your streak!');
   await noHorizontalScroll(child);
   await child.screenshot({ path: 'e2e/screenshots/03-child-home.png', fullPage: true });
 
@@ -135,7 +143,24 @@ test('full workflow: parent and child', async ({ browser }) => {
   await parent.goto('/parent/chores?tab=review');
   await parent.getByRole('link', { name: /Water the plants/ }).click();
   await parent.getByRole('button', { name: 'Approve' }).click();
-  await expect(parent.getByText('Approved. The reward has been recorded.')).toBeVisible();
+  await expect(parent.getByText('Approved. The reward has been recorded and the next one is scheduled.')).toBeVisible();
+
+  // Dashboard: weekly progress per child and rewards to hand over, with "mark as paid out".
+  await expect(parent.getByRole('region', { name: `${childName} this week` })).toContainText('1 approved');
+  await expect(parent.getByRole('region', { name: `${childName} this week` })).toContainText('+15 points');
+  const owed = parent.getByRole('region', { name: `${childName}’s rewards` });
+  await expect(owed).toContainText('€3');
+  await noHorizontalScroll(parent);
+  await parent.screenshot({ path: 'e2e/screenshots/05b-parent-dashboard.png', fullPage: true });
+  await owed.getByRole('button', { name: `Mark €3 as paid out to ${childName}` }).click();
+  await owed.getByRole('button', { name: 'Yes, paid out' }).click();
+  await expect(parent.getByText('Marked as paid out.')).toBeVisible();
+  await expect(parent.getByRole('region', { name: `${childName}’s rewards` })).toContainText('Nothing owed right now.');
+  await expect(parent.getByRole('region', { name: `${childName}’s rewards` })).toContainText('Paid out so far: €3');
+
+  // The next "Water the plants" was created automatically for tomorrow.
+  await parent.goto('/parent/chores?tab=active');
+  await expect(parent.getByRole('link', { name: /Water the plants/ })).toContainText('Due tomorrow');
   await parent.goto('/parent/rewards');
   await expect(parent.getByText('€3').first()).toBeVisible();
   await noHorizontalScroll(parent);
@@ -144,6 +169,12 @@ test('full workflow: parent and child', async ({ browser }) => {
   // 11b–12. Child sees it approved and the reward in their history
   await child.goto('/child');
   await expect(child.getByRole('heading', { name: 'Recently approved' })).toBeVisible();
+  // Points and a 1-day streak, and tomorrow's repeat is already on the list.
+  const progress = child.getByRole('region', { name: /Level 1/ });
+  await expect(progress).toContainText('15');
+  await expect(progress).toContainText('Nice work today');
+  await expect(child.getByText('Due tomorrow')).toBeVisible();
+  await child.screenshot({ path: 'e2e/screenshots/06b-child-progress.png', fullPage: true });
   await child.getByRole('link', { name: 'Rewards' }).click();
   await expect(child.getByRole('heading', { name: 'Rewards', level: 1 })).toBeVisible();
   await expect(child.getByRole('heading', { name: 'History' })).toBeVisible();
@@ -151,6 +182,21 @@ test('full workflow: parent and child', async ({ browser }) => {
   await expect(child.getByText('Water the plants')).toBeVisible();
   await noHorizontalScroll(child);
   await child.screenshot({ path: 'e2e/screenshots/07-child-rewards.png', fullPage: true });
+
+  // An overdue chore is highlighted for both of them.
+  await parent.goto('/parent/chores/new');
+  await parent.getByLabel('Chore').fill('Sweep the porch');
+  await parent.getByLabel('Amount (€)').fill('1');
+  const yesterday = await parent.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return new Intl.DateTimeFormat('en-CA').format(d); });
+  await parent.getByLabel(/Due date/).fill(yesterday);
+  await parent.getByRole('button', { name: 'Create chore' }).click();
+  await expect(parent.getByText('Chore created and assigned.')).toBeVisible();
+  await expect(parent.getByText('1 overdue')).toBeVisible();
+  await expect(parent.getByRole('link', { name: /Sweep the porch/ })).toContainText('Overdue · yesterday');
+  await child.goto('/child');
+  await expect(child.getByText('1 is overdue.')).toBeVisible();
+  await expect(child.getByText('Overdue · yesterday')).toBeVisible();
+  await noHorizontalScroll(child);
 
   expect(parentErrors, parentErrors.join('\n')).toEqual([]);
   expect(childErrors, childErrors.join('\n')).toEqual([]);

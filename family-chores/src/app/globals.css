@@ -1,28 +1,59 @@
 @import "tailwindcss";
 
-/* Calm, light, professional: off-white canvas, white cards, ink text, one teal accent. */
+/* Calm and professional: off-white canvas, white cards, ink text, one teal accent.
+   Dark mode follows the system setting (prefers-color-scheme) by swapping the same variables. */
 @theme {
   --color-canvas: #f7f7f5;
   --color-card: #ffffff;
+  --color-field: #ffffff;
   --color-ink: #16181d;
   --color-ink-2: #4b5160;
-  --color-ink-3: #7a8090;
+  --color-ink-3: #6b7180;
   --color-line: #e6e6e1;
   --color-line-strong: #d4d4cd;
   --color-accent: #0f766e;
   --color-accent-strong: #0b5c56;
   --color-accent-soft: #e6f2f0;
+  --color-on-accent: #ffffff;
   --color-warn: #a15c07;
   --color-warn-soft: #fdf3e2;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
   --color-ok: #17733f;
   --color-ok-soft: #e7f4ec;
+  --color-gold: #b45309;
+  --color-gold-soft: #fef3c7;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --radius-card: 1rem;
 }
 
-html { color-scheme: light; }
+html { color-scheme: light dark; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #111316;
+    --color-card: #1a1d21;
+    --color-field: #22262b;
+    --color-ink: #eceef1;
+    --color-ink-2: #b8bdc7;
+    --color-ink-3: #8f95a1;
+    --color-line: #2a2e34;
+    --color-line-strong: #3a3f47;
+    --color-accent: #2dd4bf;
+    --color-accent-strong: #5eead4;
+    --color-accent-soft: #123532;
+    --color-on-accent: #06201d;
+    --color-warn: #fbbf24;
+    --color-warn-soft: #3a2b0c;
+    --color-danger: #f87171;
+    --color-danger-soft: #3b1715;
+    --color-ok: #4ade80;
+    --color-ok-soft: #12301e;
+    --color-gold: #fbbf24;
+    --color-gold-soft: #3a2b0c;
+  }
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
@@ -32,3 +63,7 @@ body {
 h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .tabular { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

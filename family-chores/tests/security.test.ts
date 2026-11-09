@@ -192,3 +192,124 @@ describe('review workflow', () => {
     expect((await A.client.rpc('review_chore', { p_chore_id: choreId, p_approve: false, p_feedback: 'x' })).error?.message).toMatch(/isn.t waiting/);
   });
 });
+
+// ---------------------------------------------------------------- part 2: repeating chores, points, payouts
+
+const dublinToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Dublin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const plusDays = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const isoDow = (day: string) => { const w = new Date(`${day}T12:00:00Z`).getUTCDay(); return w === 0 ? 7 : w; };
+const choreArgs = (assignee: string, extra: Record<string, unknown> = {}) => ({
+  p_title: 'Feed the cat', p_description: '', p_assigned_to: assignee, p_reward_type: 'money', p_reward_amount: 100,
+  p_reward_note: null, p_due_date: null, ...extra,
+});
+
+describe('repeating chores', () => {
+  let dailyId: string;
+
+  it('validates the repeat rule in the database', async () => {
+    const noDays = await A.client.rpc('create_chore', choreArgs(alex.id, { p_repeat: 'weekly', p_repeat_days: [] }));
+    expect(noDays.error?.message).toMatch(/Choose at least one day/);
+    const badPoints = await A.client.rpc('create_chore', choreArgs(alex.id, { p_points: 5000 }));
+    expect(badPoints.error).toBeTruthy();
+    const badDays = await A.client.rpc('create_chore', choreArgs(alex.id, { p_repeat: 'weekly', p_repeat_days: [0, 8, 3, 3] }));
+    expect(badDays.error).toBeNull();
+    const { data } = await admin.from('chores').select('repeat_days').eq('id', badDays.data as string).single();
+    expect(data?.repeat_days).toEqual([3]); // cleaned to valid, unique weekdays
+    await A.client.rpc('delete_chore', { p_chore_id: badDays.data });
+  });
+
+  it('children cannot create repeating chores or change points', async () => {
+    expect((await alex.client.rpc('create_chore', choreArgs(alex.id, { p_repeat: 'daily', p_points: 1000 }))).error?.message).toMatch(/Only a parent/);
+    const upd = await alex.client.from('chores').update({ points: 1000, repeat: 'daily' }).eq('id', choreId).select();
+    expect(upd.error ?? (upd.data?.length === 0 ? 'no rows' : null)).toBeTruthy();
+    const { data } = await admin.from('chores').select('points').eq('id', choreId).single();
+    expect(data?.points).toBe(10);
+  });
+
+  it('a daily chore without a date starts today, and approving it creates exactly one next instance', async () => {
+    const today = dublinToday();
+    const { data, error } = await A.client.rpc('create_chore', choreArgs(alex.id, { p_repeat: 'daily', p_points: 15 }));
+    expect(error).toBeNull();
+    dailyId = data as string;
+    const first = await alex.client.from('chores').select('due_date, repeat, points').eq('id', dailyId).single();
+    expect(first.data).toEqual({ due_date: today, repeat: 'daily', points: 15 });
+
+    expect((await alex.client.rpc('submit_chore', { p_chore_id: dailyId, p_photo_path: null, p_note: null })).error).toBeNull();
+    expect((await A.client.rpc('review_chore', { p_chore_id: dailyId, p_approve: true, p_feedback: null })).error).toBeNull();
+    // A second approval is refused, so no duplicate is created.
+    expect((await A.client.rpc('review_chore', { p_chore_id: dailyId, p_approve: true, p_feedback: null })).error?.message).toMatch(/isn.t waiting/);
+
+    const next = await alex.client.from('chores').select('id, status, due_date, points, repeat, series_id, title, reward_amount').eq('series_id', dailyId);
+    expect(next.data).toHaveLength(1);
+    expect(next.data![0]).toMatchObject({ status: 'assigned', due_date: plusDays(today, 1), points: 15, repeat: 'daily', title: 'Feed the cat', reward_amount: 100 });
+    // Other households and other children can't see the new instance.
+    expect((await B.client.from('chores').select('id').eq('series_id', dailyId)).data).toEqual([]);
+    expect((await jamie.client.from('chores').select('id').eq('series_id', dailyId)).data).toEqual([]);
+  });
+
+  it('sending a repeating chore back does not create a new one', async () => {
+    const { data: next } = await admin.from('chores').select('id').eq('series_id', dailyId).single();
+    await alex.client.rpc('submit_chore', { p_chore_id: next!.id, p_photo_path: null, p_note: null });
+    expect((await A.client.rpc('review_chore', { p_chore_id: next!.id, p_approve: false, p_feedback: 'Fill the water bowl too' })).error).toBeNull();
+    expect((await admin.from('chores').select('id').eq('series_id', dailyId)).data).toHaveLength(1);
+    await A.client.rpc('delete_chore', { p_chore_id: next!.id });
+  });
+
+  it('a weekly chore is scheduled on the next chosen weekday', async () => {
+    const today = dublinToday();
+    const days = [isoDow(plusDays(today, 2)), isoDow(plusDays(today, 5))];
+    const { data: id } = await A.client.rpc('create_chore', choreArgs(jamie.id, { p_repeat: 'weekly', p_repeat_days: days, p_due_date: today }));
+    await jamie.client.rpc('submit_chore', { p_chore_id: id, p_photo_path: null, p_note: null });
+    expect((await A.client.rpc('review_chore', { p_chore_id: id, p_approve: true, p_feedback: null })).error).toBeNull();
+    const { data } = await admin.from('chores').select('due_date, assigned_to').eq('series_id', id as string).single();
+    expect(data).toEqual({ due_date: plusDays(today, 2), assigned_to: jamie.id });
+  });
+
+  it('internal helpers cannot be called by users', async () => {
+    expect((await alex.client.rpc('household_today', { p_household: A.householdId })).error).toBeTruthy();
+    expect((await A.client.rpc('next_due_date', { p_after: '2026-01-01', p_repeat: 'daily', p_days: [] })).error).toBeTruthy();
+  });
+});
+
+describe('reward payouts', () => {
+  it('children cannot mark rewards as paid out, even their own', async () => {
+    const { error } = await alex.client.rpc('mark_rewards_paid', { p_child_id: alex.id, p_reward_type: 'money', p_chore_id: null });
+    expect(error?.message).toMatch(/Only a parent/);
+    const ins = await alex.client.from('payouts').insert({ household_id: A.householdId, child_id: alex.id, reward_type: 'money', amount: 1, chore_count: 1 });
+    expect(ins.error).toBeTruthy();
+  });
+
+  it('signed-out visitors and other households cannot mark payouts', async () => {
+    const anon = createClient(URL, ANON, { auth: { persistSession: false } });
+    expect((await anon.rpc('mark_rewards_paid', { p_child_id: alex.id, p_reward_type: 'money', p_chore_id: null })).error).toBeTruthy();
+    expect((await B.client.rpc('mark_rewards_paid', { p_child_id: alex.id, p_reward_type: 'money', p_chore_id: null })).error?.message).toMatch(/Choose a child/);
+    const { data } = await admin.from('chores').select('payout_id').eq('id', choreId).single();
+    expect(data?.payout_id).toBeNull();
+  });
+
+  it('a parent marks all owed money as paid out once; the payout is recorded', async () => {
+    // Alex has two approved money chores: €5 (Clean bedroom) and €1 (the first daily Feed the cat).
+    const { data: pid, error } = await A.client.rpc('mark_rewards_paid', { p_child_id: alex.id, p_reward_type: 'money', p_chore_id: null });
+    expect(error).toBeNull();
+    const { data: payout } = await A.client.from('payouts').select('child_id, reward_type, amount, chore_count, paid_by').eq('id', pid as string).single();
+    expect(payout).toEqual({ child_id: alex.id, reward_type: 'money', amount: 600, chore_count: 2, paid_by: A.id });
+    const { data: chore } = await alex.client.from('chores').select('payout_id, paid_at').eq('id', choreId).single();
+    expect(chore?.payout_id).toBe(pid);
+    expect(chore?.paid_at).toBeTruthy();
+    // Nothing left to pay, so a second tap does nothing.
+    expect((await A.client.rpc('mark_rewards_paid', { p_child_id: alex.id, p_reward_type: 'money', p_chore_id: null })).error?.message).toMatch(/Nothing to pay out/);
+  });
+
+  it('payout records are private to the household, and children see only their own', async () => {
+    expect((await alex.client.from('payouts').select('child_id')).data?.map((p) => p.child_id)).toEqual([alex.id]);
+    expect((await jamie.client.from('payouts').select('id')).data).toEqual([]);
+    expect((await B.client.from('payouts').select('id')).data).toEqual([]);
+    expect((await outsiderChild.client.from('payouts').select('id')).data).toEqual([]);
+  });
+
+  it('only approved chores can be paid, and a chore from another child is refused', async () => {
+    const { data: open } = await A.client.rpc('create_chore', choreArgs(jamie.id));
+    expect((await A.client.rpc('mark_rewards_paid', { p_child_id: jamie.id, p_reward_type: 'money', p_chore_id: open })).error?.message).toMatch(/Nothing to pay out/);
+    expect((await A.client.rpc('mark_rewards_paid', { p_child_id: alex.id, p_reward_type: 'money', p_chore_id: open })).error?.message).toMatch(/Nothing to pay out/);
+  });
+});

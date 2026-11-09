@@ -45,3 +45,10 @@ next-env.d.ts
 /e2e/screenshots/
 /test-results/
 /playwright-report/
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.pyc
+node_modules/
