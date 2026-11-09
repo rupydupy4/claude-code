@@ -1,0 +1,11 @@
+{
+  "name": "habit-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A simple offline habit tracker web app (PWA).",
+  "scripts": {
+    "start": "node serve.js",
+    "test": "node tests/test-app.js && node tests/test-ui.js",
+    "icons": "node tools/make-icons.js"
+  }
+}
