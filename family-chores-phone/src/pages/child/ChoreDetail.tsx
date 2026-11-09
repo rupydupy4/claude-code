@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Camera, Check, X } from 'lucide-react';
-import { currentUser, submitChore, useStore } from '../../lib/store';
+import { ArrowLeft, Camera, Check, Image, X } from 'lucide-react';
+import { currentUser, isOverdue, submitChore, useStore } from '../../lib/store';
 import { ACCEPT, PhotoError, checkPhoto, shrinkPhoto } from '../../lib/photos';
-import { formatDateTime, formatDue, formatReward, today } from '../../lib/format';
+import { describeRepeat, formatDateTime, formatDue, formatReward, today } from '../../lib/format';
+import { tap } from '../../lib/native';
 import { StoredPhoto } from '../../components/parts';
 import { message } from '../../components/forms';
-import { Card, EmptyState, Notice, StatusBadge, buttonClass, labelClass, textareaClass } from '../../components/ui';
+import { Card, EmptyState, Notice, StatusBadge, buttonClass, cx, labelClass, textareaClass } from '../../components/ui';
 
 function HandIn({ choreId, resubmit }: { choreId: string; resubmit: boolean }) {
   const navigate = useNavigate();
@@ -15,7 +16,8 @@ function HandIn({ choreId, resubmit }: { choreId: string; resubmit: boolean }) {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const library = useRef<HTMLInputElement>(null);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   const pick = (f?: File) => {
@@ -32,7 +34,7 @@ function HandIn({ choreId, resubmit }: { choreId: string; resubmit: boolean }) {
   const clear = () => {
     setFile(null);
     setPreview(null);
-    if (input.current) input.current.value = '';
+    for (const i of [camera.current, library.current]) if (i) i.value = '';
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -41,7 +43,8 @@ function HandIn({ choreId, resubmit }: { choreId: string; resubmit: boolean }) {
     try {
       const photo = file ? await shrinkPhoto(file) : null;
       await submitChore(choreId, { photo, note });
-      navigate('/child', { state: { notice: 'Handed in! A parent will check it soon.' } });
+      tap();
+      navigate('/child', { replace: true, state: { notice: 'Handed in! A parent will check it soon.' } });
     } catch (err) {
       setError(err instanceof PhotoError ? err.message : message(err));
       setBusy(false);
@@ -54,16 +57,23 @@ function HandIn({ choreId, resubmit }: { choreId: string; resubmit: boolean }) {
       <div>
         <span className={labelClass}>Photo <span className="font-normal text-ink-3">(optional)</span></span>
         {preview ? (
-          <div className="relative overflow-hidden rounded-xl border border-line bg-black/[0.03]">
+          <div className="relative overflow-hidden rounded-xl border border-line bg-ink/[0.04]">
             <img src={preview} alt="Your photo" className="max-h-80 w-full object-contain" />
-            <button type="button" onClick={clear} aria-label="Remove photo" className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 shadow"><X size={18} /></button>
+            <button type="button" onClick={clear} aria-label="Remove photo" className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-card/90 text-ink shadow"><X size={20} aria-hidden="true" /></button>
           </div>
         ) : (
-          <button type="button" onClick={() => input.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-white py-6 font-medium text-ink-2 hover:border-ink-3">
-            <Camera size={20} aria-hidden="true" />Add a photo
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => camera.current?.click()} className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong bg-field py-4 font-medium text-ink-2 hover:border-ink-3 active:bg-ink/5">
+              <Camera size={22} aria-hidden="true" />Take a photo
+            </button>
+            <button type="button" onClick={() => library.current?.click()} className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong bg-field py-4 font-medium text-ink-2 hover:border-ink-3 active:bg-ink/5">
+              <Image size={22} aria-hidden="true" />Choose a photo
+            </button>
+          </div>
         )}
-        <input ref={input} type="file" accept={ACCEPT} className="sr-only" aria-label="Choose a photo" onChange={(e) => pick(e.target.files?.[0])} />
+        {/* `capture` opens the camera straight away on phones; the second input opens the photo library. */}
+        <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-label="Take a photo with the camera" onChange={(e) => pick(e.target.files?.[0])} />
+        <input ref={library} type="file" accept={ACCEPT} className="sr-only" tabIndex={-1} aria-label="Choose a photo" onChange={(e) => pick(e.target.files?.[0])} />
       </div>
       <label className="block">
         <span className={labelClass}>Note <span className="font-normal text-ink-3">(optional)</span></span>
@@ -83,15 +93,18 @@ export function ChildChoreDetail() {
   if (!chore) return <EmptyState title="Chore not found"><Link to="/child" className="font-semibold text-accent">Back home</Link></EmptyState>;
   const t = today();
   const canHandIn = chore.status === 'assigned' || chore.status === 'needs_changes';
+  const repeat = describeRepeat(chore.repeat, chore.repeatDays);
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <Link to="/child" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-2 hover:text-ink"><ArrowLeft size={16} aria-hidden="true" />Home</Link>
+      <Link to="/child" className="-my-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-ink-2 hover:text-ink"><ArrowLeft size={16} aria-hidden="true" />Home</Link>
       <Card className="p-5 sm:p-6">
         <StatusBadge status={chore.status} />
         <h1 className="mt-2 text-2xl font-semibold">{chore.title}</h1>
-        <div className="mt-2 flex flex-wrap gap-x-4 text-sm text-ink-2">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-2">
           <span>Reward: <strong className="font-semibold text-ink">{formatReward(chore)}</strong></span>
-          {chore.dueDate && <span>{formatDue(chore.dueDate, t)}</span>}
+          {chore.points > 0 && <span>Points: <strong className="font-semibold text-ink">{chore.points}</strong></span>}
+          {chore.dueDate && chore.status !== 'approved' && <span className={cx(isOverdue(chore, t) && 'font-semibold text-danger')}>{formatDue(chore.dueDate, t)}</span>}
+          {repeat && <span>{repeat}</span>}
         </div>
         {chore.description && (
           <div className="mt-5 border-t border-line pt-5">
@@ -108,7 +121,7 @@ export function ChildChoreDetail() {
         </Card>
       )}
       {chore.status === 'submitted' && chore.submittedAt && <Notice tone="warn">Waiting for approval. Handed in {formatDateTime(chore.submittedAt)}.</Notice>}
-      {chore.status === 'approved' && <Notice tone="ok">Approved{chore.approvedAt ? ` ${formatDateTime(chore.approvedAt)}` : ''}. {formatReward(chore)} added to your rewards.{chore.feedback ? ` “${chore.feedback}”` : ''}</Notice>}
+      {chore.status === 'approved' && <Notice tone="ok">Approved{chore.approvedAt ? ` ${formatDateTime(chore.approvedAt)}` : ''}. {formatReward(chore)}{chore.points ? ` and ${chore.points} points` : ''} added to your rewards.{chore.feedback ? ` “${chore.feedback}”` : ''}</Notice>}
       {!canHandIn && (chore.childNote || chore.hasPhoto) && (
         <Card className="p-5">
           <h2 className="font-semibold">What you handed in</h2>

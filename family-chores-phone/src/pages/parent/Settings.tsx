@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
-import { StoreError, changePin, currentUser, deleteEverything, signOut, updateHousehold, useStore } from '../../lib/store';
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronRight, LogOut } from 'lucide-react';
+import { StoreError, changePin, currentUser, deleteEverything, setHaptics, signOut, updateHousehold, useStore } from '../../lib/store';
 import { ConfirmButton } from '../../components/parts';
+import { RestoreBackup, SaveBackupButton } from '../../components/backup';
 import { Field, str, useSubmit } from '../../components/forms';
 import { Card, Notice, PageHeader, buttonClass, inputClass } from '../../components/ui';
 
@@ -10,6 +11,7 @@ export function ParentSettings() {
   const navigate = useNavigate();
   const me = useStore((s) => currentUser(s))!;
   const household = useStore((s) => s.data.household)!;
+  const haptics = useStore((s) => s.data.prefs.haptics);
   const [saved, setSaved] = useState('');
   const details = useSubmit((f) => { updateHousehold(str(f, 'household'), str(f, 'name')); setSaved('details'); });
   const pin = useSubmit(async (f) => {
@@ -29,6 +31,7 @@ export function ParentSettings() {
           <button className={buttonClass('primary')}>Save</button>
         </form>
       </Card>
+
       <Card className="p-5 sm:p-6">
         <h2 className="mb-4 font-semibold">Change parent PIN</h2>
         <form onSubmit={pin.onSubmit} className="space-y-4">
@@ -42,19 +45,50 @@ export function ParentSettings() {
           <button className={buttonClass('secondary')} disabled={pin.busy}>Change PIN</button>
         </form>
       </Card>
+
       <Card className="p-5 sm:p-6">
-        <h2 className="font-semibold">Privacy</h2>
-        <p className="mt-1 text-sm text-ink-2">
-          Everything, including photos, is saved only on this device. Nothing is uploaded or shared.
-          Clearing this browser’s website data or deleting the home-screen app removes it.
-        </p>
-        {household.demo && <p className="mt-2 text-sm text-ink-2">You’re using the demo household. Delete everything below to set up your own.</p>}
+        <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
+          <span>
+            <span className="block font-semibold">Vibrate on key actions</span>
+            <span className="block text-sm text-ink-2">A small tap when a chore is handed in, approved or paid out.</span>
+          </span>
+          <input type="checkbox" role="switch" className="h-6 w-6 shrink-0 accent-accent" checked={haptics} onChange={(e) => setHaptics(e.target.checked)} />
+        </label>
       </Card>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button type="button" className={buttonClass('secondary')} onClick={() => { signOut(); navigate('/'); }}><LogOut size={18} aria-hidden="true" />Switch user</button>
-        <ConfirmButton label="Delete everything" confirmLabel="Delete" confirmText="Delete the household, children, chores, rewards and photos from this device?"
-          onConfirm={async () => { await deleteEverything(); navigate('/'); }} />
-      </div>
+
+      <Card className="p-5 sm:p-6">
+        <h2 className="font-semibold">Back up and restore</h2>
+        <p className="mb-4 mt-1 text-sm text-ink-2">
+          Save everything, photos included, as one file you keep (for example in Files or your cloud drive). Use it to move to a new phone,
+          or to get your data back if this device is lost or reset. Restoring replaces everything on this device.
+        </p>
+        <div className="flex flex-wrap items-start gap-3">
+          <SaveBackupButton />
+          <RestoreBackup replacing />
+        </div>
+      </Card>
+
+      <Card className="divide-y divide-line">
+        <div className="p-5 sm:p-6">
+          <h2 className="font-semibold">Privacy</h2>
+          <p className="mt-1 text-sm text-ink-2">
+            Family Chores collects no data. Everything, including photos, is saved only on this device. Nothing is uploaded or shared,
+            and there are no adverts or tracking.
+          </p>
+          {household.demo && <p className="mt-2 text-sm text-ink-2">You’re using the demo household. Delete all data below to set up your own.</p>}
+        </div>
+        <Link to="/privacy" className="flex min-h-12 items-center justify-between px-5 font-medium hover:bg-ink/[0.03] sm:px-6">Privacy policy<ChevronRight size={18} className="text-ink-3" aria-hidden="true" /></Link>
+        <Link to="/terms" className="flex min-h-12 items-center justify-between px-5 font-medium hover:bg-ink/[0.03] sm:px-6">Terms of use<ChevronRight size={18} className="text-ink-3" aria-hidden="true" /></Link>
+      </Card>
+
+      <Card className="p-5 sm:p-6">
+        <h2 className="font-semibold">Delete all data</h2>
+        <p className="mb-4 mt-1 text-sm text-ink-2">Removes the household, children, chores, rewards and photos from this device. This can’t be undone unless you saved a backup.</p>
+        <ConfirmButton label="Delete all data" confirmLabel="Delete everything" confirmText="Delete everything from this device?"
+          onConfirm={async () => { await deleteEverything(); navigate('/', { replace: true }); }} />
+      </Card>
+
+      <button type="button" className={buttonClass('secondary')} onClick={() => { signOut(); navigate('/'); }}><LogOut size={18} aria-hidden="true" />Switch user</button>
     </div>
   );
 }

@@ -6,17 +6,18 @@ import { STATUS_LABEL } from '../lib/format';
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
 const BTN = {
-  primary: 'bg-accent text-white hover:bg-accent-strong',
-  secondary: 'bg-card text-ink border border-line-strong hover:border-ink-3',
-  ghost: 'text-ink-2 hover:bg-black/5',
-  danger: 'bg-danger-soft text-danger hover:bg-[#fbdcd8]',
+  primary: 'bg-accent text-on-accent hover:bg-accent-strong active:bg-accent-strong',
+  secondary: 'bg-card text-ink border border-line-strong hover:border-ink-3 active:bg-ink/5',
+  ghost: 'text-ink-2 hover:bg-ink/5 active:bg-ink/10',
+  danger: 'bg-danger-soft text-danger hover:bg-danger/15 active:bg-danger/20',
 };
 export type ButtonVariant = keyof typeof BTN;
 
+/** Every button is at least 44 px tall, the recommended touch target on phones. */
 export function buttonClass(variant: ButtonVariant = 'primary', size: 'md' | 'lg' | 'sm' = 'md') {
   return cx(
     'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap',
-    size === 'lg' ? 'h-12 px-5 text-base' : size === 'sm' ? 'h-9 px-3 text-sm' : 'h-11 px-4 text-[15px]',
+    size === 'lg' ? 'h-12 px-5 text-base' : size === 'sm' ? 'h-11 px-3.5 text-sm' : 'h-11 px-4 text-[15px]',
     BTN[variant],
   );
 }
@@ -56,18 +57,34 @@ export function Section({ title, action, children, count }: { title: string; act
   );
 }
 
+/** A small text link used in section headers, padded so it is still easy to tap. */
+export function TextLink({ to, children }: { to: string; children: ReactNode }) {
+  return <Link to={to} className="-my-2 inline-flex min-h-11 items-center px-1 text-sm font-semibold text-accent">{children}</Link>;
+}
+
 export function EmptyState({ icon, title, children }: { icon?: ReactNode; title: string; children?: ReactNode }) {
   return (
     <div className="rounded-card border border-dashed border-line-strong px-5 py-8 text-center">
-      {icon && <div className="mx-auto mb-2 flex justify-center text-ink-3">{icon}</div>}
+      {icon && <div className="mx-auto mb-2 flex justify-center text-ink-3" aria-hidden="true">{icon}</div>}
       <p className="font-medium">{title}</p>
       {children && <div className="mx-auto mt-1 max-w-sm text-sm text-ink-2">{children}</div>}
     </div>
   );
 }
 
+/** A simple labelled progress bar. */
+export function ProgressBar({ value, max, label, tone = 'accent' }: { value: number; max: number; label: string; tone?: 'accent' | 'ok' | 'gold' }) {
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  const fill = { accent: 'bg-accent', ok: 'bg-ok', gold: 'bg-gold' }[tone];
+  return (
+    <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={Math.max(max, 1)} aria-valuenow={Math.min(value, max)} className="h-2.5 w-full overflow-hidden rounded-full bg-ink/[0.08]">
+      <div className={cx('h-full rounded-full transition-[width]', fill)} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
 const STATUS_STYLE: Record<ChoreStatus, string> = {
-  assigned: 'bg-black/5 text-ink-2',
+  assigned: 'bg-ink/5 text-ink-2',
   submitted: 'bg-warn-soft text-warn',
   approved: 'bg-ok-soft text-ok',
   needs_changes: 'bg-danger-soft text-danger',
@@ -99,6 +116,8 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'warn' | '
 }
 
 export const inputClass =
-  'block w-full rounded-xl border border-line-strong bg-white px-3.5 h-11 text-[15px] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/15';
+  'block w-full rounded-xl border border-line-strong bg-field px-3.5 h-12 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent/15';
 export const textareaClass = cx(inputClass, 'h-auto min-h-24 py-2.5 leading-relaxed');
 export const labelClass = 'mb-1.5 block text-sm font-medium text-ink-2';
+export const chipOn = 'border-accent bg-accent-soft text-accent-strong';
+export const chipOff = 'border-line-strong bg-field text-ink-2 hover:border-ink-3';

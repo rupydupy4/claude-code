@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { currentUser, setMyColor, signOut, useStore } from '../../lib/store';
 import { ColorPicker } from '../../components/parts';
@@ -21,6 +21,11 @@ export function ChildSettings() {
         <p className="mt-5 text-sm text-ink-3">To change your name, ask a parent.</p>
       </Card>
       <button type="button" className={buttonClass('secondary')} onClick={() => { signOut(); navigate('/'); }}><LogOut size={18} aria-hidden="true" />Switch user</button>
+      <p className="flex gap-2 text-sm text-ink-3">
+        <Link to="/privacy" className="inline-flex min-h-11 items-center font-medium hover:text-ink">Privacy</Link>
+        <span aria-hidden="true" className="self-center">·</span>
+        <Link to="/terms" className="inline-flex min-h-11 items-center font-medium hover:text-ink">Terms</Link>
+      </p>
     </div>
   );
 }

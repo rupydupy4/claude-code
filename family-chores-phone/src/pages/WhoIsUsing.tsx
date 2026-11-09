@@ -4,8 +4,11 @@ import { ArrowLeft, Lock } from 'lucide-react';
 import { signInAs, useStore } from '../lib/store';
 import type { Member } from '../lib/types';
 import { AuthCard } from '../components/AuthCard';
+import { Flash } from '../components/parts';
 import { Field, str, useSubmit } from '../components/forms';
 import { Avatar, Notice, buttonClass, inputClass } from '../components/ui';
+
+const personClass = 'flex min-h-14 w-full items-center gap-3 rounded-xl border border-line bg-field px-4 py-3 text-left text-[17px] font-semibold hover:border-ink-3 active:bg-ink/5';
 
 export function WhoIsUsing() {
   const members = useStore((s) => s.data.members);
@@ -24,7 +27,7 @@ export function WhoIsUsing() {
           {pin.error && <Notice tone="danger">{pin.error}</Notice>}
           <Field label="Parent PIN"><input className={`${inputClass} tracking-[0.3em]`} name="pin" type="password" inputMode="numeric" maxLength={6} autoFocus autoComplete="current-password" required /></Field>
           <button className={buttonClass('primary', 'lg') + ' w-full'} disabled={pin.busy}>Continue</button>
-          <button type="button" className={buttonClass('ghost') + ' w-full'} onClick={() => { setParent(null); pin.setError(''); }}><ArrowLeft size={16} aria-hidden="true" />Back</button>
+          <button type="button" data-back-cancel className={buttonClass('ghost') + ' w-full'} onClick={() => { setParent(null); pin.setError(''); }}><ArrowLeft size={16} aria-hidden="true" />Back</button>
         </form>
       </AuthCard>
     );
@@ -34,19 +37,18 @@ export function WhoIsUsing() {
   const parents = members.filter((m) => m.role === 'parent');
   return (
     <AuthCard title="Who’s using Family Chores?" subtitle={household.name}>
+      <div className="mb-4 empty:hidden"><Flash /></div>
       <ul className="space-y-2">
         {kids.map((k) => (
           <li key={k.id}>
-            <button type="button" onClick={async () => { await signInAs(k.id); navigate('/child'); }}
-              className="flex w-full items-center gap-3 rounded-xl border border-line bg-white px-4 py-3 text-left text-[17px] font-semibold hover:border-ink-3">
+            <button type="button" onClick={async () => { await signInAs(k.id); navigate('/child'); }} className={personClass}>
               <Avatar name={k.name} color={k.avatarColor} size={40} />{k.name}
             </button>
           </li>
         ))}
         {parents.map((p) => (
           <li key={p.id}>
-            <button type="button" onClick={() => setParent(p)}
-              className="flex w-full items-center gap-3 rounded-xl border border-line bg-white px-4 py-3 text-left text-[17px] font-semibold hover:border-ink-3">
+            <button type="button" onClick={() => setParent(p)} className={personClass}>
               <Avatar name={p.name} color={p.avatarColor} size={40} />
               <span className="flex-1">{p.name}</span>
               <span className="flex items-center gap-1 text-sm font-medium text-ink-3"><Lock size={14} aria-hidden="true" />Parent</span>

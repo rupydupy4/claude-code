@@ -1,16 +1,19 @@
 {
   "name": "Family Chores",
   "short_name": "Chores",
-  "description": "Chores and rewards for your family.",
+  "description": "Chores and rewards for your family, on one shared device. Everything stays on the device.",
+  "lang": "en-GB",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#f7f7f5",
-  "theme_color": "#f7f7f5",
+  "theme_color": "#0f766e",
+  "categories": ["lifestyle", "productivity", "education"],
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

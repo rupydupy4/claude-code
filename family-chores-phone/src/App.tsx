@@ -1,10 +1,12 @@
-import type { ReactNode } from 'react';
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect, type ReactNode } from 'react';
+import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { currentUser, useStore } from './lib/store';
+import { startNative } from './lib/native';
 import { AppShell, type NavItem } from './components/AppShell';
 import { Notice } from './components/ui';
 import { Welcome } from './pages/Welcome';
 import { WhoIsUsing } from './pages/WhoIsUsing';
+import { Privacy, Terms } from './pages/Legal';
 import { ParentDashboard } from './pages/parent/Dashboard';
 import { ParentChores } from './pages/parent/Chores';
 import { ParentChoreDetail } from './pages/parent/ChoreDetail';
@@ -56,11 +58,28 @@ function Start() {
   return <Navigate to={user.role === 'parent' ? '/parent' : '/child'} replace />;
 }
 
+/** New screens start at the top, like a native app. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  // A block body on purpose: newer browsers return a Promise from scrollTo, which React would
+  // otherwise treat as a clean-up function.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export function App() {
+  useEffect(() => {
+    startNative();
+  }, []);
   return (
     <HashRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Start />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/parent" element={<Area role="parent"><ParentDashboard /></Area>} />
         <Route path="/parent/chores" element={<Area role="parent"><ParentChores /></Area>} />
         <Route path="/parent/chores/new" element={<Area role="parent"><ChoreEditor /></Area>} />

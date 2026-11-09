@@ -1,8 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import { useStore } from '../../lib/store';
-import { totalRewards } from '../../lib/format';
-import { RewardHistory, RewardTiles } from '../../components/parts';
-import { Avatar, PageHeader, Section, cx } from '../../components/ui';
+import { rewardBalance, useStore } from '../../lib/store';
+import { RewardBalanceCard, RewardHistory } from '../../components/parts';
+import { PageHeader, Section, TextLink, cx } from '../../components/ui';
 
 export function ParentRewards() {
   const [sp] = useSearchParams();
@@ -13,17 +12,21 @@ export function ParentRewards() {
   const child = kidById.has(sp.get('child') ?? '') ? sp.get('child')! : '';
   return (
     <div className="space-y-8">
-      <PageHeader title="Rewards" subtitle="Recorded when you approve a chore. These are records only: no payments or screen-time controls." />
-      <div className="grid gap-3 sm:grid-cols-2">
-        {kids.map((k) => (
-          <Link key={k.id} to={child === k.id ? '/parent/rewards' : `/parent/rewards?child=${k.id}`} aria-current={child === k.id ? 'true' : undefined}
-            className={cx('block rounded-card border bg-card p-4', child === k.id ? 'border-accent ring-1 ring-accent' : 'border-line hover:border-line-strong')}>
-            <div className="mb-3 flex items-center gap-2.5"><Avatar name={k.name} color={k.avatarColor} size={32} /><span className="font-semibold">{k.name}</span></div>
-            <RewardTiles t={totalRewards(chores.filter((c) => c.assignedTo === k.id))} />
-          </Link>
-        ))}
-      </div>
-      <Section title={child ? `${kidById.get(child)!.name}’s history` : 'History'} action={child ? <Link to="/parent/rewards" className="text-sm font-semibold text-accent">Show everyone</Link> : undefined}>
+      <PageHeader title="Rewards" subtitle="Recorded when you approve a chore. Mark them as paid out when you hand them over. Records only: no payments or screen-time controls." />
+      <Section title="To hand over">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {kids.map((k) => <RewardBalanceCard key={k.id} child={k} b={rewardBalance(chores.filter((c) => c.assignedTo === k.id))} />)}
+        </div>
+      </Section>
+      {kids.length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Show history for">
+          {[{ id: '', name: 'Everyone' }, ...kids].map((k) => (
+            <Link key={k.id || 'all'} to={k.id ? `/parent/rewards?child=${k.id}` : '/parent/rewards'} replace aria-current={child === k.id ? 'true' : undefined}
+              className={cx('inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium', child === k.id ? 'border-accent bg-accent-soft text-accent-strong' : 'border-line-strong text-ink-2')}>{k.name}</Link>
+          ))}
+        </div>
+      )}
+      <Section title={child ? `${kidById.get(child)!.name}’s history` : 'History'} action={child ? <TextLink to="/parent/rewards">Show everyone</TextLink> : undefined}>
         <RewardHistory chores={child ? chores.filter((c) => c.assignedTo === child) : chores} kids={kidById} />
       </Section>
     </div>

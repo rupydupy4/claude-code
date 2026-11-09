@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { StoreError, createHousehold, loadDemo } from '../lib/store';
 import { AuthCard } from '../components/AuthCard';
+import { RestoreBackup } from '../components/backup';
 import { Field, str, useSubmit } from '../components/forms';
 import { Notice, buttonClass, inputClass } from '../components/ui';
 
@@ -17,16 +18,23 @@ export function Welcome() {
   return (
     <AuthCard
       title="Set up your household"
-      subtitle="Chores and rewards for your family. Everything is saved on this device."
+      subtitle="Chores and rewards for your family. Everything is saved on this device: no account needed."
       footer={
-        <section aria-labelledby="demo-h" className="rounded-card border border-line bg-card p-5">
-          <h2 id="demo-h" className="font-semibold text-ink">Just looking?</h2>
-          <p className="mt-1">Try the demo: The Smith Family with Sarah (parent) and her children Alex and Jamie. The parent PIN is <strong className="text-ink">1234</strong>.</p>
-          {demo.error && <div className="mt-3"><Notice tone="danger">{demo.error}</Notice></div>}
-          <form onSubmit={demo.onSubmit} className="mt-4">
-            <button className={buttonClass('secondary')} disabled={demo.busy}>Try the demo</button>
-          </form>
-        </section>
+        <>
+          <section aria-labelledby="demo-h" className="rounded-card border border-line bg-card p-5">
+            <h2 id="demo-h" className="font-semibold text-ink">Just looking?</h2>
+            <p className="mt-1">Try the demo: The Smith Family with Sarah (parent) and her children Alex and Jamie. The parent PIN is <strong className="text-ink">1234</strong>.</p>
+            {demo.error && <div className="mt-3"><Notice tone="danger">{demo.error}</Notice></div>}
+            <form onSubmit={demo.onSubmit} className="mt-4">
+              <button className={buttonClass('secondary')} disabled={demo.busy}>Try the demo</button>
+            </form>
+          </section>
+          <section aria-labelledby="restore-h" className="rounded-card border border-line bg-card p-5">
+            <h2 id="restore-h" className="font-semibold text-ink">Moving from another device?</h2>
+            <p className="mb-4 mt-1">Restore a backup saved from Family Chores (Settings → Save a backup).</p>
+            <RestoreBackup replacing={false} />
+          </section>
+        </>
       }
     >
       <form onSubmit={setup.onSubmit} className="space-y-4">

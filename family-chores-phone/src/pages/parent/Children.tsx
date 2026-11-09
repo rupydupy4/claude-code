@@ -47,7 +47,7 @@ function EditChild({ child }: { child: Member }) {
       <div><span className={labelClass}>Colour</span><ColorPicker value={color} onChange={setColor} /></div>
       <div className="flex gap-2">
         <button className={buttonClass('primary', 'sm')}>Save</button>
-        <button type="button" className={buttonClass('ghost', 'sm')} onClick={() => setOpen(false)}>Close</button>
+        <button type="button" data-back-cancel className={buttonClass('ghost', 'sm')} onClick={() => setOpen(false)}>Close</button>
       </div>
     </form>
   );
@@ -75,7 +75,7 @@ export function ParentChildren() {
                       <div className="font-semibold">{k.name}</div>
                       <div className="text-sm text-ink-3">{mine.filter(isOpen).length} to do · <RewardSummary t={totalRewards(mine)} empty="no rewards yet" /></div>
                     </div>
-                    <Link to={`/parent/chores/new?child=${k.id}`} className="text-sm font-semibold text-accent">New chore</Link>
+                    <Link to={`/parent/chores/new?child=${k.id}`} className="inline-flex min-h-11 items-center px-1 text-sm font-semibold text-accent">New chore</Link>
                     <EditChild child={k} />
                   </div>
                   <div className="mt-3 flex justify-end">

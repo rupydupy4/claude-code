@@ -1,6 +1,6 @@
-import { currentUser, useStore } from '../../lib/store';
-import { totalRewards } from '../../lib/format';
-import { RewardHistory, RewardTiles } from '../../components/parts';
+import { computeProgress, currentUser, useStore } from '../../lib/store';
+import { today, totalRewards } from '../../lib/format';
+import { ProgressCard, RewardHistory, RewardTiles } from '../../components/parts';
 import { PageHeader, Section } from '../../components/ui';
 
 export function ChildRewards() {
@@ -12,6 +12,7 @@ export function ChildRewards() {
     <div className="space-y-8">
       <PageHeader title="Rewards" subtitle="Everything you’ve earned from approved chores." />
       <RewardTiles t={t} />
+      <ProgressCard p={computeProgress(chores, today())} name={me.name} />
       {t.custom.length > 0 && (
         <Section title="Other rewards">
           <ul className="flex flex-wrap gap-2">{t.custom.map((r, i) => <li key={i} className="rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent-strong">{r}</li>)}</ul>

@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ClipboardCheck, Plus, UserPlus } from 'lucide-react';
-import { currentUser, useStore } from '../../lib/store';
-import { byApproved, byDue, formatDateTime, formatReward, isOpen, today, totalRewards } from '../../lib/format';
-import { ChoreList, ChoreRow, Flash, RewardSummary } from '../../components/parts';
-import { Avatar, ButtonLink, Card, EmptyState, Section } from '../../components/ui';
+import { CheckCircle2, ClipboardCheck, Flame, Plus, Star, UserPlus } from 'lucide-react';
+import { computeProgress, currentUser, dueGroup, isOpen, isOverdue, rewardBalance, useStore, weekCompletion } from '../../lib/store';
+import { byApproved, byDue, bySubmitted, formatDateTime, formatReward, today } from '../../lib/format';
+import { ChoreList, ChoreRow, Flash, RewardBalanceCard } from '../../components/parts';
+import { Avatar, ButtonLink, Card, EmptyState, ProgressBar, Section, TextLink } from '../../components/ui';
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -17,8 +17,9 @@ export function ParentDashboard() {
   const kids = data.members.filter((m) => m.role === 'child');
   const kidById = new Map(kids.map((k) => [k.id, k]));
   const chores = data.chores;
-  const waiting = chores.filter((c) => c.status === 'submitted').sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''));
-  const todays = chores.filter((c) => (isOpen(c) && c.dueDate && c.dueDate <= t) || (c.dueDate === t && c.status === 'submitted')).sort(byDue);
+  const waiting = chores.filter((c) => c.status === 'submitted').sort(bySubmitted);
+  const todays = chores.filter((c) => isOpen(c) && dueGroup(c, t) === 'today').sort(byDue);
+  const overdue = todays.filter((c) => isOverdue(c, t)).length;
   const recent = chores.filter((c) => c.status === 'approved').sort(byApproved).slice(0, 5);
 
   return (
@@ -47,49 +48,66 @@ export function ParentDashboard() {
 
       <Section title="Needs approval" count={waiting.length}>
         {waiting.length ? (
-          <ChoreList>{waiting.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assignedTo)} today={t} to={`/parent/chores/${c.id}`} />)}</ChoreList>
+          <ChoreList label="Chores waiting for approval">{waiting.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assignedTo)} today={t} to={`/parent/chores/${c.id}`} />)}</ChoreList>
         ) : (
-          <EmptyState icon={<CheckCircle2 size={24} />} title="All caught up">Submitted chores will appear here.</EmptyState>
-        )}
-      </Section>
-
-      <Section title="Today" count={todays.length} action={<Link to="/parent/chores" className="text-sm font-semibold text-accent">All chores</Link>}>
-        {todays.length ? (
-          <ChoreList>{todays.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assignedTo)} today={t} to={`/parent/chores/${c.id}`} />)}</ChoreList>
-        ) : (
-          <EmptyState title="Nothing due today">Chores with today’s due date show up here.</EmptyState>
+          <EmptyState icon={<CheckCircle2 size={24} />} title="All caught up">Chores your children hand in will appear here for you to check.</EmptyState>
         )}
       </Section>
 
       {kids.length > 0 && (
-        <Section title="Children" action={<Link to="/parent/children" className="text-sm font-semibold text-accent">Manage</Link>}>
+        <Section title="This week" action={<TextLink to="/parent/children">Manage children</TextLink>}>
           <div className="grid gap-3 sm:grid-cols-2">
             {kids.map((k) => {
               const mine = chores.filter((c) => c.assignedTo === k.id);
+              const w = weekCompletion(mine, t);
+              const p = computeProgress(mine, t);
               return (
-                <Link key={k.id} to={`/parent/rewards?child=${k.id}`} className="block">
-                  <Card className="flex items-center gap-3 p-4 hover:border-line-strong">
-                    <Avatar name={k.name} color={k.avatarColor} size={44} />
-                    <div className="min-w-0">
+                <Card key={k.id} className="p-4" role="region" aria-label={`${k.name} this week`}>
+                  <div className="flex items-center gap-3">
+                    <Avatar name={k.name} color={k.avatarColor} size={40} />
+                    <div className="min-w-0 flex-1">
                       <div className="font-semibold">{k.name}</div>
-                      <div className="text-sm text-ink-3">{mine.filter(isOpen).length} to do · {mine.filter((c) => c.status === 'submitted').length} waiting</div>
-                      <div className="mt-0.5 text-sm font-medium text-ink-2">Earned: <RewardSummary t={totalRewards(mine)} empty="nothing yet" /></div>
+                      <div className="text-sm text-ink-3">{w.due ? `${w.done} of ${w.due} due this week done` : 'No chores due this week'}</div>
                     </div>
-                  </Card>
-                </Link>
+                  </div>
+                  <div className="mt-3"><ProgressBar value={w.done} max={w.due} label={`${k.name}: ${w.done} of ${w.due} chores done this week`} tone="ok" /></div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-2">
+                    <span className="inline-flex items-center gap-1"><CheckCircle2 size={15} className="text-ok" aria-hidden="true" />{w.approvedThisWeek} approved</span>
+                    <span className="inline-flex items-center gap-1"><Star size={15} className="text-gold" aria-hidden="true" />+{p.pointsThisWeek} points</span>
+                    <span className="inline-flex items-center gap-1"><Flame size={15} className={p.streak ? 'text-gold' : 'text-ink-3'} aria-hidden="true" />{p.streak}-day streak</span>
+                  </div>
+                </Card>
               );
             })}
           </div>
         </Section>
       )}
 
-      <Section title="Recently approved" action={<Link to="/parent/rewards" className="text-sm font-semibold text-accent">All rewards</Link>}>
+      {kids.length > 0 && (
+        <Section title="Rewards to hand over" action={<TextLink to="/parent/rewards">All rewards</TextLink>}>
+          <p className="-mt-1 text-sm text-ink-3">Approved rewards stay here until you mark them as paid out. This is a record only: no money moves.</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {kids.map((k) => <RewardBalanceCard key={k.id} child={k} b={rewardBalance(chores.filter((c) => c.assignedTo === k.id))} />)}
+          </div>
+        </Section>
+      )}
+
+      <Section title="Today" count={todays.length}
+        action={<div className="flex items-center gap-3">{overdue > 0 && <span className="rounded-full bg-danger-soft px-2.5 py-0.5 text-xs font-semibold text-danger">{overdue} overdue</span>}<TextLink to="/parent/chores?tab=active">All chores</TextLink></div>}>
+        {todays.length ? (
+          <ChoreList label="Chores due today">{todays.map((c) => <ChoreRow key={c.id} chore={c} child={kidById.get(c.assignedTo)} today={t} to={`/parent/chores/${c.id}`} />)}</ChoreList>
+        ) : (
+          <EmptyState title="Nothing left to do today">Chores due today, or overdue, show up here.</EmptyState>
+        )}
+      </Section>
+
+      <Section title="Recently approved">
         {recent.length ? (
           <Card className="divide-y divide-line">
             {recent.map((c) => {
               const k = kidById.get(c.assignedTo);
               return (
-                <Link key={c.id} to={`/parent/chores/${c.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-black/[0.02]">
+                <Link key={c.id} to={`/parent/chores/${c.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-ink/[0.03]">
                   {k && <Avatar name={k.name} color={k.avatarColor} size={32} />}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{c.title}</div>
@@ -101,7 +119,7 @@ export function ParentDashboard() {
             })}
           </Card>
         ) : (
-          <EmptyState title="No approved chores yet" />
+          <EmptyState title="No approved chores yet">When you approve a chore, it shows up here.</EmptyState>
         )}
       </Section>
     </div>
